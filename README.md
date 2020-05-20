@@ -15,7 +15,7 @@ Copyright (c) 2011, Cumulus Python. No rights reserved.
 See [contributors](/people.png).
 
 # Upgrade from the original repo
-This repo aims to upgrade the original repo from Python2 to Python3, as well as integrate into my [self-host video streaming project](https://github.com/KnugiHK/video-streaming)
+This repo aims to upgrade the original repo from Python 2 to Python 3, as well as integrate into my [self-host video streaming project](https://github.com/KnugiHK/video-streaming). Therefore, only rtmp.py will be modified in this repo.
 
 # RTMP server #
 
