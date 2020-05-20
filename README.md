@@ -26,7 +26,7 @@ notices.
 
 # Getting Started #
 
-Dependencies: Python 2.6 and Python 2.5
+Dependencies: Python 3.8
 
 Typically an application can launch this server as follows:
 ```
