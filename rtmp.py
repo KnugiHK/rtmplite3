@@ -115,7 +115,6 @@ class SockStream(object):
             try: yield multitask.send(self.sock, chunk)
             except: raise ConnectionClosed
                                 
-
 '''
 NOTE: Here is a part of the documentation to understand how the Chunks' headers work.
       To have a complete documentation, YOU HAVE TO READ rtmp_specification_1.0.pdf (from page 13)
@@ -204,8 +203,8 @@ class Header(object):
         self.streamId = streamId # message stream id
         
         if (channel < 64): self.hdrdata = struct.pack('>B', channel)
-        elif (channel < 320): self.hdrdata = '\x00' + struct.pack('>B', channel-64)
-        else: self.hdrdata = '\x01' + struct.pack('>H', channel-64)
+        elif (channel < 320): self.hdrdata = b'\x00' + struct.pack('>B', channel-64)
+        else: self.hdrdata = b'\x01' + struct.pack('>H', channel-64)
     
     def toBytes(self, control):
         data = (self.hdrdata[0] | control).to_bytes(1, 'big')
@@ -346,7 +345,7 @@ class Protocol(object):
     def handshakeResponse(data):
         # send both data parts before reading next ping-size, to work with ffmpeg
         if struct.unpack('>I', data[5:9])[0] == 0:
-            data = '\x03' + '\x00'*Protocol.PING_SIZE
+            data = b'\x03' + b'\x00'*Protocol.PING_SIZE
             return data + data[1:]
         else:
             chunk_type, data = data[0], data[1:] # first byte is ignored
@@ -484,8 +483,8 @@ class Protocol(object):
                         data= size bytes
                         backPointer=4 bytes, value == size
                         '''
-                        subtype = ord(aggdata[0])
-                        subsize = struct.unpack('!I', '\x00' + aggdata[1:4])[0]
+                        subtype = aggdata[0]
+                        subsize = struct.unpack('!I', b'\x00' + aggdata[1:4])[0]
                         subtime = struct.unpack('!I', aggdata[4:8])[0]
                         substreamid = struct.unpack('<I', aggdata[8:12])[0]     
                         subheader = Header(channel, time=subtime, size=subsize, type=subtype, streamId=substreamid) # TODO: set correct channel
@@ -629,7 +628,7 @@ class Command(object):
         #hexdump.hexdump(output)
         #output.seek(0)
         if msg.type == Message.RPC3 or msg.type == Message.DATA3:
-            data = '\x00' + output.read()
+            data = b'\x00' + output.read()
         else:
             data = output.read()
         msg.data = data
@@ -706,7 +705,7 @@ class FLV(object):
         amfWriter.write({"duration": duration, "videocodecid": 2})
         output.seek(0); data = output.read()
         length, ts = len(data), 0
-        data = struct.pack('>BBHBHB', Message.DATA, (length >> 16) & 0xff, length & 0x0ffff, (ts >> 16) & 0xff, ts & 0x0ffff, (ts >> 24) & 0xff) + '\x00\x00\x00' +  data
+        data = struct.pack('>BBHBHB', Message.DATA, (length >> 16) & 0xff, length & 0x0ffff, (ts >> 16) & 0xff, ts & 0x0ffff, (ts >> 24) & 0xff) + b'\x00\x00\x00' +  data
         data += struct.pack('>I', len(data))
         lastpos = self.fp.tell()
         if lastpos != 13: self.fp.seek(13, os.SEEK_SET)
@@ -724,7 +723,7 @@ class FLV(object):
             if self.tsr0 is None: self.tsr0 = ts - self.tsr1
             self.tsr, ts = ts, ts - self.tsr0
             # if message.type == Message.AUDIO: print 'w', message.type, ts
-            data = struct.pack('>BBHBHB', message.type, (length >> 16) & 0xff, length & 0x0ffff, (ts >> 16) & 0xff, ts & 0x0ffff, (ts >> 24) & 0xff) + '\x00\x00\x00' +  message.data
+            data = struct.pack('>BBHBHB', message.type, (length >> 16) & 0xff, length & 0x0ffff, (ts >> 16) & 0xff, ts & 0x0ffff, (ts >> 24) & 0xff) + b'\x00\x00\x00' +  message.data
             data += struct.pack('>I', len(data))
             self.fp.write(data)
     
@@ -1036,16 +1035,16 @@ class Wirecast(App):
     def onPublishData(self, client, stream, message):
         if message.type == Message.DATA and not stream.metaData: # store the first meta data on this published stream for late joining players
             stream.metaData = message.dup()
-        if message.type == Message.VIDEO and message.data[:2] == '\x17\x00': # H264Avc intra + seq, store it
+        if message.type == Message.VIDEO and message.data[:2] == b'\x17\x00': # H264Avc intra + seq, store it
             stream.avcSeq = message.dup()
         return True
 
     def onPlayData(self, client, stream, message):
         if message.type == Message.VIDEO: # only video packets need special handling
-            if message.data[:2] == '\x17\x00': # intra+seq is being sent, possibly by Flash Player publisher.
+            if message.data[:2] == b'\x17\x00': # intra+seq is being sent, possibly by Flash Player publisher.
                 stream.avcIntra = True
             elif not stream.avcIntra:  # intra frame hasn't been sent yet.
-                if message.data[:2] == '\x17\x01': # intra+nalu is being sent, possibly by wirecast publisher.
+                if message.data[:2] == b'\x17\x01': # intra+nalu is being sent, possibly by wirecast publisher.
                     publisher = self.publishers.get(stream.name, None)
                     if publisher and publisher.avcSeq: # if a publisher exists
                         def sendboth(stream, msgs):
