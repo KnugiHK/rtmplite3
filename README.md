@@ -32,7 +32,7 @@ Typically an application can launch this server as follows:
 ```
 $ python rtmp.py -d
 ```
-The -d option enables debug trace so you know what is happening in the server.
+The -d option enables debug trace so you know what is happening in the server. **Please note that debug trace will hugely affect the performance of the RTMP server**
 
 To know the command line options use the -h option:
 ```
