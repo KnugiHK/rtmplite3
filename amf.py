@@ -5,7 +5,7 @@
 # http://opensource.adobe.com/wiki/download/attachments/1114283/amf3_spec_121207.pdf
 
 import struct, datetime, time, types
-from io import StringIO
+from io import BytesIO
 import xml.etree.ElementTree as ET
 
 class Object(object): # a typed object or received object. Typed object has _classname attr.
@@ -22,15 +22,16 @@ class _Undefined(object):
 undefined = _Undefined()  # received undefined is different from null (None)
 
 
-class BytesIO(StringIO): # raise EOFError if needed, allow read with optional length, and peek next byte
-    def __init__(self, *args, **kwargs): StringIO.__init__(self, *args, **kwargs)
-    def eof(self): return self.tell() >= self.len  # return true if next read will cause EOFError
-    def remaining(self): return self.len - self.tell() # return number of remaining bytes
+class AMFBytesIO(BytesIO): # raise EOFError if needed, allow read with optional length, and peek next byte
+    def __init__(self, *args, **kwargs): BytesIO.__init__(self, *args, **kwargs)
+        
+    def eof(self): return self.tell() >= len(self.getvalue())  # return true if next read will cause EOFError
+    def remaining(self): return len(self.getvalue()) - self.tell() # return number of remaining bytes
     
     def read(self, length=-1):
         if length > 0 and self.eof(): raise EOFError # raise error if reading beyond EOF
-        if length > 0 and self.tell() + length > self.len: length = self.len - self.tell() # don't read more than available bytes
-        return StringIO.read(self, length)
+        if length > 0 and self.tell() + length > len(self.getvalue()): length = len(self.getvalue()) - self.tell() # don't read more than available bytes
+        return BytesIO.read(self, length)
     def peek(self):
         if self.eof(): return None
         else:
@@ -75,7 +76,7 @@ class AMF0(object):
     NUMBER, BOOL, STRING, OBJECT, MOVIECLIP, NULL, UNDEFINED, REFERENCE, ECMA_ARRAY, OBJECT_END, ARRAY, DATE, LONG_STRING, UNSUPPORTED, RECORDSET, XML, TYPED_OBJECT, TYPE_AMF3 = list(range(0x12))
 
     def __init__(self, data=None):
-        self._obj_refs, self.data = list(), data if isinstance(data, BytesIO) else BytesIO(data) if data is not None else BytesIO()
+        self._obj_refs, self.data = list(), data if isinstance(data, AMFBytesIO) else AMFBytesIO(data) if data is not None else AMFBytesIO()
     def _created(self, obj): # new object-reference is created
         self._obj_refs.append(obj); return obj
     def read(self):
@@ -109,7 +110,7 @@ class AMF0(object):
         elif isinstance(data, (str,)):  self.writeString(data)
         elif isinstance(data, (list, tuple)): self.writeArray(data)
         elif isinstance(data, (datetime.date, datetime.datetime)): self.writeDate(data)
-        elif isinstance(data, ET._ElementInterface): self.writeXML(data)
+        elif isinstance(data, ET.Element): self.writeXML(data)
         elif isinstance(data, dict):     self.writeEcmaArray(data)
         elif isinstance(data, Object) and hasattr(data, '_classname'): self.writeTypedObject(data)
         elif isinstance(data, (Object, object)):   self.writeObject(data)
@@ -126,10 +127,11 @@ class AMF0(object):
         
     def readObject(self):
         obj, key = self._created(Object()), self.readString()
-        while key != '' or self.data.peek() != chr(AMF0.OBJECT_END):
+        while key != '' or self.data.peek() != chr(AMF0.OBJECT_END).encode():
             setattr(obj, key, self.read()); key = self.readString()
-        self.data.read(1) # discard OBJECT_END
+        self.data.read() # discard OBJECT_END
         return obj
+
     def writeObject(self, data):
         if not self.writePossibleReference(data):
             self.data.write_u8(AMF0.OBJECT)
@@ -201,7 +203,7 @@ class AMF3(object):
     
     def __init__(self, data=None):
         self._obj_refs, self._str_refs, self._class_refs = list(), list(), list()
-        self.data = data if isinstance(data, BytesIO) else BytesIO(data) if data is not None else BytesIO()
+        self.data = data if isinstance(data, AMFBytesIO) else AMFBytesIO(data) if data is not None else AMFBytesIO()
 
     def read(self):
         global undefined
