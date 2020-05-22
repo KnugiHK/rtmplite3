@@ -65,16 +65,24 @@ import os, sys, time, struct, socket, traceback, multitask, amf, hashlib, hmac, 
 
 _debug = False
 
-class ConnectionClosed:
+class ConnectionClosed(Exception):
     'raised when the client closed the connection'
 
 def truncate(data, max=100):
-    return data and len(data)>max and data[:max] + '...(%d)'%(len(data),) or data
+    data1 = data and len(data)>max and data[:max]
+    if isinstance(data1, str):
+        data2 = '...(%d)'%(len(data),) or data
+    elif isinstance(data1, bytes):
+        data2 = b'...(%d)'%(len(data),) or data
+    else:
+        data1 = str(data1)
+        data2 = '...(%d)'%(len(data),) or data
+    return str(data1 + data2)
     
 class SockStream(object):
     '''A class that represents a socket as a stream'''
     def __init__(self, sock):
-        self.sock, self.buffer = sock, ''
+        self.sock, self.buffer = sock, b''
         self.bytesWritten = self.bytesRead = 0
     
     def close(self):
@@ -85,15 +93,16 @@ class SockStream(object):
             while True:
                 if len(self.buffer) >= count: # do have enough data in buffer
                     data, self.buffer = self.buffer[:count], self.buffer[count:]
-                    raise StopIteration(data)
+                    return(data)
                 if _debug: print('socket.read[%d] calling recv()'%(count,))
                 data = (yield multitask.recv(self.sock, 4096)) # read more from socket
                 if not data: raise ConnectionClosed
                 if _debug: print('socket.read[%d] %r'%(len(data), truncate(data)))
                 self.bytesRead += len(data)
                 self.buffer += data
-        except StopIteration: raise
-        except: raise ConnectionClosed # anything else is treated as connection closed.
+        except Exception as e:
+            if _debug: print(e)
+            raise ConnectionClosed # anything else is treated as connection closed.
         
     def unread(self, data):
         self.buffer = data + self.buffer
@@ -102,7 +111,7 @@ class SockStream(object):
         while len(data) > 0: # write in 4K chunks each time
             chunk, data = data[:4096], data[4096:]
             self.bytesWritten += len(chunk)
-            if _debug: print('socket.write[%d] %r'%(len(chunk), truncate(chunk)))
+            if _debug: print(('socket.write[%d] %r'%(len(chunk), truncate(chunk))))
             try: yield multitask.send(self.sock, chunk)
             except: raise ConnectionClosed
                                 
@@ -199,9 +208,9 @@ class Header(object):
         else: self.hdrdata = '\x01' + struct.pack('>H', channel-64)
     
     def toBytes(self, control):
-        data = chr(ord(self.hdrdata[0]) | control)
+        data = (self.hdrdata[0] | control).to_bytes(1, 'big')
         if len(self.hdrdata) >= 2: data += self.hdrdata[1:] 
-        
+
         # if the chunk type is not 3
         if control != Header.SEPARATOR:
             data += struct.pack('>I', self.time if self.time < 0xFFFFFF else 0xFFFFFF)[1:] # add time in 3 bytes
@@ -309,11 +318,11 @@ class Protocol(object):
             
     def parseCrossDomainPolicyRequest(self):
         # read the request
-        REQUEST = '<policy-file-request/>\x00'
+        REQUEST = b'<policy-file-request/>\x00'
         data = (yield self.stream.read(len(REQUEST)))
         if data == REQUEST:
             if _debug: print(data)
-            data = '''<!DOCTYPE cross-domain-policy SYSTEM "http://www.macromedia.com/xml/dtds/cross-domain-policy.dtd">
+            data = b'''<!DOCTYPE cross-domain-policy SYSTEM "http://www.macromedia.com/xml/dtds/cross-domain-policy.dtd">
                     <cross-domain-policy>
                       <allow-access-from domain="*" to-ports="1935" secure='false'/>
                     </cross-domain-policy>'''
@@ -322,12 +331,13 @@ class Protocol(object):
         else:
             yield self.stream.unread(data)
             
-    SERVER_KEY = '\x47\x65\x6e\x75\x69\x6e\x65\x20\x41\x64\x6f\x62\x65\x20\x46\x6c\x61\x73\x68\x20\x4d\x65\x64\x69\x61\x20\x53\x65\x72\x76\x65\x72\x20\x30\x30\x31\xf0\xee\xc2\x4a\x80\x68\xbe\xe8\x2e\x00\xd0\xd1\x02\x9e\x7e\x57\x6e\xec\x5d\x2d\x29\x80\x6f\xab\x93\xb8\xe6\x36\xcf\xeb\x31\xae'
-    FLASHPLAYER_KEY = '\x47\x65\x6E\x75\x69\x6E\x65\x20\x41\x64\x6F\x62\x65\x20\x46\x6C\x61\x73\x68\x20\x50\x6C\x61\x79\x65\x72\x20\x30\x30\x31\xF0\xEE\xC2\x4A\x80\x68\xBE\xE8\x2E\x00\xD0\xD1\x02\x9E\x7E\x57\x6E\xEC\x5D\x2D\x29\x80\x6F\xAB\x93\xB8\xE6\x36\xCF\xEB\x31\xAE'
+    SERVER_KEY = b'\x47\x65\x6e\x75\x69\x6e\x65\x20\x41\x64\x6f\x62\x65\x20\x46\x6c\x61\x73\x68\x20\x4d\x65\x64\x69\x61\x20\x53\x65\x72\x76\x65\x72\x20\x30\x30\x31\xf0\xee\xc2\x4a\x80\x68\xbe\xe8\x2e\x00\xd0\xd1\x02\x9e\x7e\x57\x6e\xec\x5d\x2d\x29\x80\x6f\xab\x93\xb8\xe6\x36\xcf\xeb\x31\xae'
+    FLASHPLAYER_KEY = b'\x47\x65\x6E\x75\x69\x6E\x65\x20\x41\x64\x6F\x62\x65\x20\x46\x6C\x61\x73\x68\x20\x50\x6C\x61\x79\x65\x72\x20\x30\x30\x31\xF0\xEE\xC2\x4A\x80\x68\xBE\xE8\x2E\x00\xD0\xD1\x02\x9E\x7E\x57\x6E\xEC\x5D\x2D\x29\x80\x6F\xAB\x93\xB8\xE6\x36\xCF\xEB\x31\xAE'
     
     def parseHandshake(self):
         '''Parses the rtmp handshake'''
         data = (yield self.stream.read(Protocol.PING_SIZE + 1)) # bound version and first ping
+        if _debug: print(('socket.read[%d] %r'%(len(data), truncate(str(data)))))
         data = Protocol.handshakeResponse(data)
         yield self.stream.write(data)
         data = (yield self.stream.read(Protocol.PING_SIZE))
@@ -339,10 +349,10 @@ class Protocol(object):
             data = '\x03' + '\x00'*Protocol.PING_SIZE
             return data + data[1:]
         else:
-            type, data = ord(data[0]), data[1:] # first byte is ignored
+            chunk_type, data = data[0], data[1:] # first byte is ignored
             scheme = None
             for s in range(0, 2):
-                digest_offset = (sum([ord(data[i]) for i in range(772, 776)]) % 728 + 776) if s == 1 else (sum([ord(data[i]) for i in range(8, 12)]) % 728 + 12)
+                digest_offset = (sum([data[i] for i in range(772, 776)]) % 728 + 776) if s == 1 else (sum([data[i] for i in range(8, 12)]) % 728 + 12)
                 temp = data[0:digest_offset] + data[digest_offset+32:Protocol.PING_SIZE]
                 hash = Protocol._calculateHash(temp, Protocol.FLASHPLAYER_KEY[:30])
                 if hash == data[digest_offset:digest_offset+32]:
@@ -351,24 +361,24 @@ class Protocol(object):
             if scheme is None:
                 if _debug: print('invalid RTMP connection data, assuming scheme 0')
                 scheme = 0
-            client_dh_offset = (sum([ord(data[i]) for i in range(768, 772)]) % 632 + 8) if scheme == 1 else (sum([ord(data[i]) for i in range(1532, 1536)]) % 632 + 772)
+            client_dh_offset = (sum([data[i] for i in range(768, 772)]) % 632 + 8) if scheme == 1 else (sum([data[i] for i in range(1532, 1536)]) % 632 + 772)
             outgoingKp = data[client_dh_offset:client_dh_offset+128]
-            handshake = struct.pack('>IBBBB', 0, 1, 2, 3, 4) + ''.join([chr(random.randint(0, 255)) for i in range(Protocol.PING_SIZE-8)])
-            server_dh_offset = (sum([ord(handshake[i]) for i in range(768, 772)]) % 632 + 8) if scheme == 1 else (sum([ord(handshake[i]) for i in range(1532, 1536)]) % 632 + 772)
+            handshake = struct.pack('>IBBBB', 0, 1, 2, 3, 4) + os.urandom(Protocol.PING_SIZE - 8)
+            server_dh_offset = (sum([handshake[i] for i in range(768, 772)]) % 632 + 8) if scheme == 1 else (sum([handshake[i] for i in range(1532, 1536)]) % 632 + 772)
             keys = Protocol._generateKeyPair() # (public, private)
             handshake = handshake[:server_dh_offset] + keys[0][0:128] + handshake[server_dh_offset+128:]
-            if type > 0x03: raise Exception('encryption is not supported')
-            server_digest_offset = (sum([ord(handshake[i]) for i in range(772, 776)]) % 728 + 776) if scheme == 1 else (sum([ord(handshake[i]) for i in range(8, 12)]) % 728 + 12)
+            if chunk_type > 0x03: raise Exception('encryption is not supported')
+            server_digest_offset = (sum([handshake[i] for i in range(772, 776)]) % 728 + 776) if scheme == 1 else (sum([handshake[i] for i in range(8, 12)]) % 728 + 12)
             temp = handshake[0:server_digest_offset] + handshake[server_digest_offset+32:Protocol.PING_SIZE]
             hash = Protocol._calculateHash(temp, Protocol.SERVER_KEY[:36])
             handshake = handshake[:server_digest_offset] + hash + handshake[server_digest_offset+32:]
             buffer = data[:Protocol.PING_SIZE-32]
-            key_challenge_offset = (sum([ord(buffer[i]) for i in range(772, 776)]) % 728 + 776) if scheme == 1 else (sum([ord(buffer[i]) for i in range(8, 12)]) % 728 + 12)
+            key_challenge_offset = (sum([buffer[i] for i in range(772, 776)]) % 728 + 776) if scheme == 1 else (sum([buffer[i] for i in range(8, 12)]) % 728 + 12)
             challenge_key = data[key_challenge_offset:key_challenge_offset+32]
             hash = Protocol._calculateHash(challenge_key, Protocol.SERVER_KEY[:68])
-            rand_bytes = ''.join([chr(random.randint(0, 255)) for i in range(Protocol.PING_SIZE-32)])
+            rand_bytes = os.urandom(Protocol.PING_SIZE - 32)
             last_hash = Protocol._calculateHash(rand_bytes, hash[:32])
-            output = chr(type) + handshake + rand_bytes + last_hash
+            output = chr(chunk_type).encode(encoding="utf-8") + handshake + rand_bytes + last_hash
             return output
         
     @staticmethod
@@ -377,19 +387,19 @@ class Protocol(object):
         
     @staticmethod
     def _generateKeyPair(): # dummy key pair since we don't support encryption
-        return (''.join([chr(random.randint(0, 255)) for i in range(128)]), '')
+        return (os.urandom(128), '')
         
     def parseMessages(self):
         '''Parses complete messages until connection closed. Raises ConnectionLost exception.'''
         CHANNEL_MASK = 0x3F
         while True:
-            hdrsize = ord((yield self.stream.read(1))[0])  # read header size byte
+            hdrsize = (yield self.stream.read(1))[0]  # read header size byte
             channel = hdrsize & CHANNEL_MASK
             if channel == 0: # we need one more byte
-                channel = 64 + ord((yield self.stream.read(1))[0])
+                channel = 64 + (yield self.stream.read(1))[0]
             elif channel == 1: # we need two more bytes
                 data = (yield self.stream.read(2))
-                channel = 64 + ord(data[0]) + 256 * ord(data[1])
+                channel = 64 + data[0] + 256 * data[1]
 
             hdrtype = hdrsize & Header.MASK   # read header type byte
             if hdrtype == Header.FULL or channel not in self.lastReadHeaders:
@@ -400,12 +410,12 @@ class Protocol(object):
             
             if hdrtype < Header.SEPARATOR: # time or delta has changed
                 data = (yield self.stream.read(3))
-                header.time = struct.unpack('!I', '\x00' + data)[0]
+                header.time = struct.unpack('!I', b'\x00' + data)[0]
                 
             if hdrtype < Header.TIME: # size and type also changed
                 data = (yield self.stream.read(3))
-                header.size = struct.unpack('!I', '\x00' + data)[0]
-                header.type = ord((yield self.stream.read(1))[0])
+                header.size = struct.unpack('!I', b'\x00' + data)[0]
+                header.type = (yield self.stream.read(1))[0]
 
             if hdrtype < Header.MESSAGE: # streamId also changed
                 data = (yield self.stream.read(4))
@@ -428,8 +438,8 @@ class Protocol(object):
             
             # if _debug: print 'R', header, header.currentTime, header.extendedTime, '0x%x'%(hdrsize,)
              
-            data = self.incompletePackets.get(channel, "") # are we continuing an incomplete packet?
-            
+            data = self.incompletePackets.get(channel, b"") # are we continuing an incomplete packet?
+
             count = min(header.size - (len(data)), self.readChunkSize) # how much more
             
             data += (yield self.stream.read(count))
@@ -453,8 +463,7 @@ class Protocol(object):
                 if len(data) == header.size:
                     if channel in self.incompletePackets:
                         del self.incompletePackets[channel]
-                        if _debug:
-                            print('aggregated %r bytes message: readChunkSize(%r) x %r'%(len(data), self.readChunkSize, len(data) / self.readChunkSize))
+                        if _debug: print(('aggregated %r bytes message: readChunkSize(%r) x %r'%(len(data), self.readChunkSize, len(data) / self.readChunkSize)))
                 else:
                     data, self.incompletePackets[channel] = data[:header.size], data[header.size:]
                 
@@ -489,8 +498,7 @@ class Protocol(object):
                         aggdata = aggdata[subsize:] # skip message data
                     
                         backpointer = struct.unpack('!I', aggdata[0:4])[0]
-                        if backpointer != subsize:
-                            print('Warning aggregate submsg backpointer=%r != %r' % (backpointer, subsize))                          
+                        if backpointer != subsize:  print(('Warning aggregate submsg backpointer=%r != %r' % (backpointer, subsize)))                          
                         aggdata = aggdata[4:] # skip back pointer, go to next message
                 else:
                     yield self.parseMessage(msg)
@@ -542,7 +550,7 @@ class Protocol(object):
             hdr = Header(channel=header.channel, time=header.delta if control in (Header.MESSAGE, Header.TIME) else header.time, size=header.size, type=header.type, streamId=header.streamId)
             assert message.size == len(message.data)
 
-            data = ''
+            data = b''
             while len(message.data) > 0:
                 data += hdr.toBytes(control) # gather header bytes
                 count = min(self.writeChunkSize, len(message.data))
@@ -578,15 +586,15 @@ class Command(object):
 
         length = len(message.data)
         if length == 0: raise ValueError('zero length message data')
-        
+
         if message.type == Message.RPC3 or message.type == Message.DATA3:
-            assert message.data[0] == '\x00' # must be 0 in AMF3
+            assert message.data[0] == b'\x00' # must be 0 in AMF3
             data = message.data[1:]
         else:
             data = message.data
-        
-        amfReader = amf.AMF0(data)
 
+        #from pyamf import remoting
+        amfReader = amf.AMF0(data)
         inst = cls()
         inst.type = message.type
         inst.time = message.time
@@ -600,7 +608,7 @@ class Command(object):
                 inst.id = 0
             inst.args = [] # others are optional
             while True:
-                inst.args.append(amfReader.read())
+                inst.args.append(amfReader.read()) #amfReader.read())
         except EOFError:
             pass
         return inst
@@ -610,14 +618,13 @@ class Command(object):
         assert self.type
         msg.type = self.type
         msg.time = self.time
-        output = amf.BytesIO()
+        output = amf.AMFBytesIO()
         amfWriter = amf.AMF0(output)
         amfWriter.write(self.name)
         if msg.type == Message.RPC or msg.type == Message.RPC3:
             amfWriter.write(self.id)
             amfWriter.write(self.cmdData)
-        for arg in self.args:
-            amfWriter.write(arg)
+        for arg in self.args:  amfWriter.write(arg)
         output.seek(0)
         #hexdump.hexdump(output)
         #output.seek(0)
