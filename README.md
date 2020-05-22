@@ -17,6 +17,13 @@ See [contributors](/people.png).
 # Upgrade from the original repo
 This repo aims to upgrade the original repo from Python 2 to Python 3, as well as integrate into my [self-host video streaming project](https://github.com/KnugiHK/video-streaming). Therefore, only rtmp.py will be modified in this repo.
 
+# Branches
+This repo has three branches including master, dev and svs (self-host streaming).
+
+* master: main branch; stable
+* dev: development branch; maybe buggy
+* svs: customized branch for self-host video streaming project
+
 # RTMP server #
 
 The main program is rtmp.py. Please see the embedded documentation in that file.
