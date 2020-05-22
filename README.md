@@ -15,7 +15,10 @@ Copyright (c) 2011, Cumulus Python. No rights reserved.
 See [contributors](/people.png).
 
 # Upgrade from the original repo
-This repo aims to upgrade the original repo from Python 2 to Python 3, as well as integrate into my [self-host video streaming project](https://github.com/KnugiHK/video-streaming). Therefore, only rtmp.py will be modified in this repo.
+This repo aims to upgrade the original repo from Python 2 to Python 3, as well as integrate into my [self-host video streaming project](https://github.com/KnugiHK/video-streaming). Therefore, only rtmp.py and its dependencies will be modified in this repo.
+
+## Why am I doing this
+I am working on a [self-host video streaming](https://github.com/KnugiHK/video-streaming) project with Python 3 and Flask, hence, I need a Python 3 RTMP server. However, most of the Python RTMP solution do not match what I need (developed using Python 2, no longer maintained etc.), so, I decided to transit a Python 2 solution to Python 3.
 
 # Branches
 This repo has three branches including master, dev and svs (self-host streaming).
@@ -33,7 +36,8 @@ notices.
 
 # Getting Started #
 
-Dependencies: Python 3.8
+Dependencies: Python 3.6+ (Perhaps)
+Tested environment: Windows 10 1909 with Python 3.8.3rc1
 
 Typically an application can launch this server as follows:
 ```
