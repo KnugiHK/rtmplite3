@@ -14,8 +14,18 @@ Copyright (c) 2011, Cumulus Python. No rights reserved.
 
 See [contributors](/people.png).
 
-# Upgrade from the original repo
-This repo aims to upgrade the original repo from Python 2 to Python 3, as well as integrate into my [self-host video streaming project](https://github.com/KnugiHK/video-streaming). Therefore, only rtmp.py will be modified in this repo.
+# Upgrade from the original repo #
+This repo aims to upgrade the original repo from Python 2 to Python 3, as well as integrate into my [self-host video streaming project](https://github.com/KnugiHK/video-streaming). Therefore, only rtmp.py and its dependencies will be modified in this repo.
+
+## Why am I doing this ##
+I am working on a [self-host video streaming](https://github.com/KnugiHK/video-streaming) project with Python 3 and Flask, hence, I need a Python 3 RTMP server. However, most of the Python RTMP solution do not match what I need (developed using Python 2, no longer maintained etc.), so, I decided to transit a Python 2 solution to Python 3.
+
+# Branches #
+This repo has three branches including master, dev and svs (self-host streaming).
+
+* master: main branch; stable
+* dev: development branch; maybe buggy
+* svs: customized branch for self-host video streaming project
 
 # RTMP server #
 
@@ -26,7 +36,11 @@ notices.
 
 # Getting Started #
 
-Dependencies: Python 3.8
+Dependencies: Python 3.6+ (Perhaps)
+
+Tested environment: Windows 10 1909 with Python 3.8.3rc1
+
+Planned Testing environment: Ubuntu
 
 Typically an application can launch this server as follows:
 ```
@@ -38,3 +52,21 @@ To know the command line options use the -h option:
 ```
 $ python rtmp.py -h
 ```
+
+# Contribution #
+If you want to help me to improve the quality of this project, you can submit an issue.
+
+If you want to collaborate with us, feel free to Fork this project and open a pull request.
+
+### What can you do? ###
+
+* For Issue
+  * Report any Logical Error.
+  * Report any Run-Time Error.
+  * Ask questions if you do not understand something.
+
+* For Pull request
+  * Add comments to source code.
+  * Correct any Logical Error.
+  * Correct any Run-Time Error.
+
