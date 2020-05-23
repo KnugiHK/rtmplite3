@@ -1892,12 +1892,9 @@ if __name__ == '__main__':
         agent = FlashServer()
         agent.root = options.root
         agent.start(options.host, options.port)
+        print(time.asctime(), 'Flash Server Starts - %s:%d' % (options.host, options.port))
         multitask.run()
-        if _debug:
-            print(
-                time.asctime(), 'Flash Server Starts - %s:%d' %
-                (options.host, options.port))
     except KeyboardInterrupt:
         pass
-    if _debug:
-        print(time.asctime(), 'Flash Server Stops')
+    
+    print(time.asctime(), 'Flash Server Stops')
