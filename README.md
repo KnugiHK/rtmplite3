@@ -1,9 +1,8 @@
 # What is rtmplite? #
-More details in [rtmplite](/rtmplite.md) and [siprtmp](/siprtmp.md)
+More details in [rtmplite](/rtmplite.md)
 
 > This project was migrated from <https://code.google.com/p/rtmplite> on May 17, 2015  
-> Additionally the documentation from <https://code.google.com/p/siprtmp> was merged on May 17, 2015  
-> Please see these individual description files for [rtmplite](/rtmplite.md) or [siprtmp](/siprtmp.md)  
+> Please see these individual description files for [rtmplite](/rtmplite.md)
 
 # Copyright #
 
