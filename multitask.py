@@ -1,4 +1,4 @@
-################################################################################
+##########################################################################
 #
 # Copyright (c) 2007 Christopher J. Stawarz
 #
@@ -22,8 +22,7 @@
 # CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE
 # SOFTWARE.
 #
-################################################################################
-
+##########################################################################
 
 
 """
@@ -56,7 +55,7 @@ two unrelated tasks to run concurrently:
   ...     while True:
   ...         print message
   ...         yield
-  ... 
+  ...
   >>> multitask.add(printer('hello'))
   >>> multitask.add(printer('goodbye'))
   >>> multitask.run()
@@ -103,26 +102,26 @@ raised within a child task is propagated to its parent.  For example:
   ...         yield raise_exception()
   ...     except Exception, e:
   ...         print 'caught exception: %s' % e
-  ... 
+  ...
   >>> def return_none():
   ...     yield
   ...     # do nothing
   ...     # or return
   ...     # or raise StopIteration
   ...     # or raise StopIteration(None)
-  ... 
+  ...
   >>> def return_one():
   ...     yield
   ...     raise StopIteration(1)
-  ... 
+  ...
   >>> def return_many():
   ...     yield
   ...     raise StopIteration(2, 3)  # or raise StopIteration((2, 3))
-  ... 
+  ...
   >>> def raise_exception():
   ...     yield
   ...     raise RuntimeError('foo')
-  ... 
+  ...
   >>> multitask.add(parent())
   >>> multitask.run()
   None
@@ -144,18 +143,16 @@ import time
 import types
 
 
-__author__   = 'Christopher Stawarz <cstawarz@csail.mit.edu>'
-__version__  = '0.2.0'
+__author__ = 'Christopher Stawarz <cstawarz@csail.mit.edu>'
+__version__ = '0.2.0'
 # __revision__ = int('$Revision$'.split()[1])
 
 
-
-################################################################################
+##########################################################################
 #
 # Timeout exception type
 #
-################################################################################
-
+##########################################################################
 
 
 class Timeout(Exception):
@@ -163,13 +160,11 @@ class Timeout(Exception):
     pass
 
 
-
-################################################################################
+##########################################################################
 #
 # _ChildTask class
 #
-################################################################################
-
+##########################################################################
 
 
 class _ChildTask(object):
@@ -185,13 +180,11 @@ class _ChildTask(object):
         return self.task.throw(type, value, traceback)
 
 
-
-################################################################################
+##########################################################################
 #
 # YieldCondition class
 #
-################################################################################
-
+##########################################################################
 
 
 class YieldCondition(object):
@@ -227,13 +220,11 @@ class YieldCondition(object):
         return (self.expiration is not None)
 
 
-
-################################################################################
+##########################################################################
 #
 # _SleepDelay class and related functions
 #
-################################################################################
-
+##########################################################################
 
 
 class _SleepDelay(YieldCondition):
@@ -260,13 +251,11 @@ def sleep(seconds):
     return _SleepDelay(seconds)
 
 
-
-################################################################################
+##########################################################################
 #
 # FDReady class and related functions
 #
-################################################################################
-
+##########################################################################
 
 
 class FDReady(YieldCondition):
@@ -362,13 +351,11 @@ def writable(fd, timeout=None):
     return FDReady(fd, write=True, timeout=timeout)
 
 
-
-################################################################################
+##########################################################################
 #
 # FDAction class and related functions
 #
-################################################################################
-
+##########################################################################
 
 
 class FDAction(FDReady):
@@ -586,13 +573,11 @@ def sendto(sock, *args, **kwargs):
     return FDAction(sock, sock.sendto, args, kwargs, write=True)
 
 
-
-################################################################################
+##########################################################################
 #
 # Queue and _QueueAction classes
 #
-################################################################################
-
+##########################################################################
 
 
 class Queue(object):
@@ -686,12 +671,11 @@ class _QueueAction(YieldCondition):
         self.item = item
 
 
-################################################################################
+##########################################################################
 #
 # SmartQueue and _SmartQueueAction classes
 #
-################################################################################
-
+##########################################################################
 
 
 class SmartQueue(object):
@@ -701,10 +685,10 @@ class SmartQueue(object):
     A multi-producer, multi-consumer FIFO queue (similar to
     Queue.Queue) that can be used for exchanging data between tasks.
     The difference with Queue is that this implements filtering criteria
-    on get and allows multiple get to be signalled for the same put. 
+    on get and allows multiple get to be signalled for the same put.
     On the downside, this uses list instead of deque and has lower
     performance.
-    
+
     """
 
     def __init__(self, contents=(), maxsize=0):
@@ -719,17 +703,19 @@ class SmartQueue(object):
         """
 
         self.maxsize = int(maxsize)
-        self._pending =  list(contents)
+        self._pending = list(contents)
 
     def __len__(self):
         'Return the number of items in the queue'
         return len(self._pending)
 
     def _get(self, criteria=None):
-        #self._pending = filter(lambda x: x[1]<=now, self._pending) # remove expired ones
+        # self._pending = filter(lambda x: x[1]<=now, self._pending) # remove
+        # expired ones
         if criteria:
-            found = [x for x in self._pending if criteria(x)]   # check any matching criteria
-            if found: 
+            # check any matching criteria
+            found = [x for x in self._pending if criteria(x)]
+            if found:
                 self._pending.remove(found[0])
                 return found[0]
             else:
@@ -775,9 +761,9 @@ class SmartQueue(object):
         when item has been added to the queue.  If timeout is not
         None, a Timeout exception will be raised in the yielding task
         if no space is available after timeout seconds have elapsed.
-        TODO: Otherwise if space is available, the timeout specifies how 
+        TODO: Otherwise if space is available, the timeout specifies how
         long to keep the item in the queue before discarding it if it
-        is not fetched in a get. In this case it doesnot throw exception. 
+        is not fetched in a get. In this case it doesnot throw exception.
         For example:
 
           try:
@@ -804,12 +790,11 @@ class _SmartQueueAction(YieldCondition):
         self.expires = (timeout is not None) and (time.time() + timeout) or 0
 
 
-################################################################################
+##########################################################################
 #
 # TaskManager class
 #
-################################################################################
-
+##########################################################################
 
 
 class TaskManager(object):
@@ -831,12 +816,12 @@ class TaskManager(object):
 
         """
 
-        self._queue       = collections.deque()
-        self._read_waits  = set()
+        self._queue = collections.deque()
+        self._read_waits = set()
         self._write_waits = set()
-        self._exc_waits   = set()
+        self._exc_waits = set()
         self._queue_waits = collections.defaultdict(self._double_deque)
-        self._timeouts    = []
+        self._timeouts = []
 
     @staticmethod
     def _double_deque():
@@ -856,9 +841,9 @@ class TaskManager(object):
 
         # Merge the data structures
         self._queue.extend(other._queue)
-        self._read_waits  |= other._read_waits
+        self._read_waits |= other._read_waits
         self._write_waits |= other._write_waits
-        self._exc_waits   |= other._exc_waits
+        self._exc_waits |= other._exc_waits
         self._queue_waits.update(other._queue_waits)
         self._timeouts.extend(other._timeouts)
         heapq.heapify(self._timeouts)
@@ -866,12 +851,12 @@ class TaskManager(object):
         # Make other reference the merged data structures.  This is
         # necessary because other's tasks may reference and use other
         # (e.g. to add a new task in response to an event).
-        other._queue       = self._queue
-        other._read_waits  = self._read_waits
+        other._queue = self._queue
+        other._read_waits = self._read_waits
         other._write_waits = self._write_waits
-        other._exc_waits   = self._exc_waits
+        other._exc_waits = self._exc_waits
         other._queue_waits = self._queue_waits
-        other._timeouts    = self._timeouts
+        other._timeouts = self._timeouts
 
     def add(self, task):
         'Add a new task (i.e. a generator instance) to the run queue'
@@ -948,13 +933,15 @@ class TaskManager(object):
         """
 
         while self.has_io_waits():
-            if self._handle_io_waits(self._fix_run_timeout(timeout)) or self.has_runnable(): break
+            if self._handle_io_waits(
+                    self._fix_run_timeout(timeout)) or self.has_runnable():
+                break
 
         if self.has_timeouts():
             self._handle_timeouts(self._fix_run_timeout(timeout))
 
         # Run all tasks currently in the queue
-        #for dummy in xrange(len(self._queue)):
+        # for dummy in xrange(len(self._queue)):
         while len(self._queue) > 0:
             task, input, exc_info = self._queue.popleft()
             try:
@@ -971,7 +958,7 @@ class TaskManager(object):
                     else:
                         output = e.args
                     self._enqueue(task.parent, input=output)
-            except:
+            except BaseException:
                 if isinstance(task, _ChildTask):
                     # Propagate exception to parent
                     self._enqueue(task.parent, exc_info=sys.exc_info())
@@ -1019,7 +1006,7 @@ class TaskManager(object):
                 try:
                     input = (fd._eval() if isinstance(fd, FDAction) else None)
                     self._enqueue(fd.task, input=input)
-                except:
+                except BaseException:
                     self._enqueue(fd.task, exc_info=sys.exc_info())
                 fd._remove_from_fdsets(self._read_waits,
                                        self._write_waits,
@@ -1032,7 +1019,7 @@ class TaskManager(object):
         for fd in (self._read_waits | self._write_waits | self._exc_waits):
             try:
                 select.select([fd], [fd], [fd], 0.0)
-            except:
+            except BaseException:
                 # TODO: do not enqueue the exception (socket.error) so that it does not crash
                 # when closing an already closed socket. See rtmplite issue #28
                 # self._enqueue(fd.task, exc_info=sys.exc_info())
@@ -1129,7 +1116,6 @@ class TaskManager(object):
                     if action._expires():
                         self._remove_timeout(action)
 
-
     def _handle_smart_queue_action(self, task, output):
         get_waits, put_waits = self._queue_waits[output.queue]
 
@@ -1165,20 +1151,18 @@ class TaskManager(object):
                         item = output.queue._get(criteria=action.criteria)
                         if item is not None:
                             actions.append((action, item))
-                    for action,item in actions:
+                    for action, item in actions:
                         get_waits.remove(action)
                         self._enqueue(action.task, input=item)
                         if action._expires():
                             self._remove_timeout(action)
 
 
-
-################################################################################
+##########################################################################
 #
 # Default TaskManager instance
 #
-################################################################################
-
+##########################################################################
 
 
 _default_task_manager = None
@@ -1202,13 +1186,11 @@ def run():
     get_default_task_manager().run()
 
 
-
-################################################################################
+##########################################################################
 #
 # Test routine
 #
-################################################################################
-
+##########################################################################
 
 
 if __name__ == '__main__':
@@ -1242,7 +1224,7 @@ if __name__ == '__main__':
         print('bad_descriptor running')
         try:
             yield readable(12)
-        except:
+        except BaseException:
             print('exception in bad_descriptor:', sys.exc_info()[1])
 
     def sleeper():
@@ -1268,7 +1250,7 @@ if __name__ == '__main__':
         print('child returned: %s' % ((yield child()),))
         try:
             yield child(raise_exc=True)
-        except:
+        except BaseException:
             print('exception in child:', sys.exc_info()[1])
 
     def child(raise_exc=False):
