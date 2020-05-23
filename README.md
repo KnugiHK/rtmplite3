@@ -52,6 +52,9 @@ To know the command line options use the -h option:
 ```
 $ python rtmp.py -h
 ```
+# Known issues
+1. The program cannot exit with Control+C in Windows
+2. Viewer cannot join the stream after the feed started to broadcast
 
 # Contribution #
 If you want to help me to improve the quality of this project, you can submit an issue.
