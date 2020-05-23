@@ -1960,7 +1960,7 @@ class FlashServer(object):
         raise NotImplementedError()
 
 def onConnect_handler(client, *args):
-    print(client.path, "is connected!")
+    print("App '{0}' is connected!".format(client.path))
 
 # The main routine to start, run and stop the service
 if __name__ == '__main__':
