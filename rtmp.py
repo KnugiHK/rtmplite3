@@ -1425,8 +1425,12 @@ class FlashServer(object):
         '''This should be used to start listening for RTMP connections on the given port, which defaults to 1935.'''
         if not self.server:
             sock = self.sock = socket.socket(type=socket.SOCK_STREAM)
-            sock.setsockopt(socket.SOL_SOCKET, socket.SO_REUSEADDR, 1)
-            sock.bind((host, port))
+            try:
+                sock.bind((host, port))
+            except OSError:
+                if _debug:
+                    print('port (%s) already in use' % port)
+                exit()
             if _debug:
                 print('listening on ', sock.getsockname())
             sock.listen(5)
@@ -1877,11 +1881,11 @@ if __name__ == '__main__':
         agent = FlashServer()
         agent.root = options.root
         agent.start(options.host, options.port)
+        multitask.run()
         if _debug:
             print(
                 time.asctime(), 'Flash Server Starts - %s:%d' %
                 (options.host, options.port))
-        multitask.run()
     except KeyboardInterrupt:
         pass
     if _debug:
