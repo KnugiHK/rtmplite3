@@ -34,6 +34,9 @@ Some parts of the documentation are copied here. Other modules such as amf, util
 and multitask are used from elsewhere and contain their respective copyright 
 notices.
 
+## Documentation ##
+Instead looking at the documentation from the source code, I migrated (or migrating) the embedded documentation from the source code to Wiki of this repo.
+
 # Getting Started #
 
 Dependencies: Python 3.6+
