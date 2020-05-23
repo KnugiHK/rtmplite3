@@ -1355,6 +1355,20 @@ class App(object):
         if "onResult" in Event.handlers:
             Event.handlers["onResult"](client, result)
 
+    def onUnpublish(self, client, cmd):
+        if _debug:
+            print(self.name, 'onUnpublish', cmd) 
+
+        if "onUnpublish" in Event.handlers:
+            Event.handlers["onUnpublish"](client, cmd)    
+    
+    def onDelete(self, client, cmd):
+        if _debug:
+            print(self.name, 'onDelete', cmd) 
+
+        if "onDelete" in Event.handlers:
+            Event.handlers["onDelete"](client, cmd)    
+
     # this is invoked every time some media packet is received from published
     # stream.
     def onPublishData(self, client, stream, message):
@@ -1398,7 +1412,9 @@ class Event():
                        "onStatus": len(signature(App.onStatus).parameters) - 1, 
                        "onResult": len(signature(App.onResult).parameters) - 1, 
                        "onPublishData": len(signature(App.onPublishData).parameters) - 1, 
-                       "onPlayData": len(signature(App.onPlayData).parameters) - 1
+                       "onPlayData": len(signature(App.onPlayData).parameters) - 1,
+                       "onUnpublish": len(signature(App.onUnpublish).parameters) - 1,
+                       "onDelete": len(signature(App.onDelete).parameters) - 1
     }
     @staticmethod
     def add_handler(event, handler):
@@ -1682,6 +1698,14 @@ class FlashServer(object):
             elif cmd.name == '_result':
                 if hasattr(inst, 'onResult'):
                     result = inst.onResult(client, cmd.args[0])
+            elif cmd.name == 'FCUnpublish':
+                if hasattr(inst, 'onUnpublish'):
+                    result = inst.onUnpublish(client, cmd.args[0])
+                self.unpublishhandler(client, cmd)
+            elif cmd.name == 'deleteStream':
+                if hasattr(inst, 'onDelete'):
+                    result = inst.onDelete(client, cmd.args[0])
+                self.deletehandler(client, cmd)
             else:
                 res, code, result = Command(), '_result', None
                 try:
@@ -1922,6 +1946,12 @@ class FlashServer(object):
                         yield s.send(m)
                 if stream.recordfile is not None:
                     stream.recordfile.write(message)
+
+    def unpublishhandler(self, client, cmd):
+        raise NotImplementedError()
+
+    def deletehandler(self, client, cmd):
+        raise NotImplementedError()
 
 def onConnect_handler(client, *args):
     print(client.path, "is connected!")
