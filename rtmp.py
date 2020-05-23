@@ -1700,9 +1700,9 @@ class FlashServer(object):
                         description='',
                         details=None)])
             yield stream.send(response)
-        except ValueError as E:  # some error occurred. inform the app.
+        except ValueError as e:  # some error occurred. inform the app.
             if _debug:
-                print('error in publishing stream', str(E))
+                print('error in publishing stream', str(e))
             response = Command(
                 name='onStatus',
                 id=cmd.id,
@@ -1711,7 +1711,7 @@ class FlashServer(object):
                     amf.Object(
                         level='error',
                         code='NetStream.Publish.BadName',
-                        description=str(E),
+                        description=str(e),
                         details=None)])
             yield stream.send(response)
 
@@ -1780,9 +1780,9 @@ class FlashServer(object):
 
             if task is not None:
                 multitask.add(task)
-        except ValueError as E:  # some error occurred. inform the app.
+        except ValueError as e:  # some error occurred. inform the app.
             if _debug:
-                print('error in playing stream', str(E))
+                print('error in playing stream', str(e))
             response = Command(
                 name='onStatus',
                 id=cmd.id,
@@ -1791,7 +1791,7 @@ class FlashServer(object):
                     amf.Object(
                         level='error',
                         code='NetStream.Play.StreamNotFound',
-                        description=str(E),
+                        description=str(e),
                         details=None)])
             yield stream.send(response)
 
@@ -1813,9 +1813,9 @@ class FlashServer(object):
                         description=stream.name,
                         details=None)])
             yield stream.send(response)
-        except ValueError as E:  # some error occurred. inform the app.
+        except ValueError as e:  # some error occurred. inform the app.
             if _debug:
-                print('error in seeking stream', str(E))
+                print('error in seeking stream', str(e))
             response = Command(
                 name='onStatus',
                 id=cmd.id,
@@ -1824,7 +1824,7 @@ class FlashServer(object):
                     amf.Object(
                         level='error',
                         code='NetStream.Seek.Failed',
-                        description=str(E),
+                        description=str(e),
                         details=None)])
             yield stream.send(response)
 
