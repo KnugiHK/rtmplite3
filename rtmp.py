@@ -108,13 +108,13 @@ class SockStream(object):
                 if len(self.buffer) >= count:  # do have enough data in buffer
                     data, self.buffer = self.buffer[:count], self.buffer[count:]
                     return(data)
-                if _debug:
+                if _verbose:
                     print('socket.read[%d] calling recv()' % (count,))
                 # read more from socket
                 data = (yield multitask.recv(self.sock, 4096))
                 if not data:
                     raise ConnectionClosed
-                if _debug:
+                if _verbose:
                     print('socket.read[%d] %r' % (len(data), truncate(data)))
                 self.bytesRead += len(data)
                 self.buffer += data
@@ -131,7 +131,7 @@ class SockStream(object):
         while len(data) > 0:  # write in 4K chunks each time
             chunk, data = data[:4096], data[4096:]
             self.bytesWritten += len(chunk)
-            if _debug:
+            if _verbose:
                 print(('socket.write[%d] %r' % (len(chunk), truncate(chunk))))
             try:
                 yield multitask.send(self.sock, chunk)
@@ -562,7 +562,7 @@ class Protocol(object):
                 if len(data) == header.size:
                     if channel in self.incompletePackets:
                         del self.incompletePackets[channel]
-                        if _debug:
+                        if _verbose:
                             print(('aggregated %r bytes message: readChunkSize(%r) x %r' % (
                                 len(data), self.readChunkSize, len(data) / self.readChunkSize)))
                 else:
@@ -579,7 +579,7 @@ class Protocol(object):
                 if hdr.type == Message.AGGREGATE:
                     ''' see http://code.google.com/p/red5/source/browse/java/server/trunk/src/org/red5/server/net/rtmp/event/Aggregate.java / getParts()
                     '''
-                    if _debug:
+                    if _verbose:
                         print('Protocol.parseMessages aggregated msg=', msg)
                     aggdata = data
                     while len(aggdata) > 0:
@@ -621,7 +621,7 @@ class Protocol(object):
 
     def parseMessage(self, msg):
         try:
-            if _debug:
+            if _verbose:
                 print('Protocol.parseMessage msg=', msg)
             if msg.header.channel == Protocol.PROTOCOL_CHANNEL_ID:
                 yield self.protocolMessage(msg)
@@ -641,7 +641,7 @@ class Protocol(object):
             # TODO this should be used using multitask.Queue and remove
             # previous wait.
             message = yield self.writeQueue.get()
-            if _debug:
+            if _verbose:
                 print('Protocol.write msg=', message)
             if message is None:
                 try:
@@ -1869,14 +1869,25 @@ if __name__ == '__main__':
         help="document path prefix. Directory must end with /. Default './'")
     parser.add_option(
         '-d',
+        '--debug',
+        dest='debug',
+        default=False,
+        action='store_true',
+        help='enable debug trace')
+    parser.add_option(
+        '-v',
         '--verbose',
         dest='verbose',
         default=False,
         action='store_true',
-        help='enable debug trace')
+        help='enable verbose mode (display all traffic)')
     (options, args) = parser.parse_args()
 
-    _debug = options.verbose
+    _verbose = options.verbose
+    if _verbose:
+        _debug = True
+    else:
+        _debug = options.debug
     try:
         agent = FlashServer()
         agent.root = options.root
