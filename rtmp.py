@@ -1293,80 +1293,46 @@ class App(object):
     def onConnect(self, client, *args):
         if _debug:
             print(self.name, 'onConnect', client.path)
-
-        if "onConnect" in Event.handlers:
-            Event.handlers["onConnect"](client, *args)
-
         return True
 
     def onDisconnect(self, client):
         if _debug:
             print(self.name, 'onDisconnect', client.path)
 
-        if "onDisconnect" in Event.handlers:
-            Event.handlers["onDisconnect"](client)
-
     def onPublish(self, client, stream):
         if _debug:
             print(self.name, 'onPublish', client.path, stream.name)
-
-        if "onPublish" in Event.handlers:
-            Event.handlers["onPublish"](client, stream)
 
     def onClose(self, client, stream):
         if _debug:
             print(self.name, 'onClose', client.path, stream.name)
 
-        if "onClose" in Event.handlers:
-            Event.handlers["onClose"](client, stream)
-
     def onPlay(self, client, stream):
         if _debug:
             print(self.name, 'onPlay', client.path, stream.name)
-
-        if "onPlay" in Event.handlers:
-            Event.handlers["onPlay"](client, stream)
 
     def onStop(self, client, stream):
         if _debug:
             print(self.name, 'onStop', client.path, stream.name)
 
-        if "onStop" in Event.handlers:
-            Event.handlers["onStop"](client, stream)
-
     def onCommand(self, client, cmd, *args):
         if _debug:
             print(self.name, 'onCommand', cmd, args)
-
-        if "onCommand" in Event.handlers:
-            Event.handlers["onCommand"](client, cmd, *args)
 
     def onStatus(self, client, info):
         if _debug:
             print(self.name, 'onStatus', info)
 
-        if "onStatus" in Event.handlers:
-            Event.handlers["onStatus"](client, info)
-
     def onResult(self, client, result):
         if _debug:
             print(self.name, 'onResult', result)
 
-        if "onResult" in Event.handlers:
-            Event.handlers["onResult"](client, result)
-
     # this is invoked every time some media packet is received from published
     # stream.
     def onPublishData(self, client, stream, message):
-        if "onPublishData" in Event.handlers:
-            Event.handlers["onPublishData"](client, stream, message)
-
         return True  # should return True so that the data is actually published in that stream
 
     def onPlayData(self, client, stream, message):
-        if "onPlayData" in Event.handlers:
-            Event.handlers["onPlayData"](client, stream, message)
-
         return True  # should return True so that data will be actually played in that stream
 
     def getfile(self, path, name, root, mode):
@@ -1381,52 +1347,6 @@ class App(object):
 # elif stream.mode == 'live': FLV().delete(path) # TODO: this is commented
 # out to avoid accidental delete
         return None
-
-class Event():
-    """Provide a handy function to add event handle"""
-    
-    from inspect import signature
-
-    handlers = {}
-    __SUBSCRIBABLES = {"onConnect": len(signature(App.onConnect).parameters) - 1,
-                       "onDisconnect": len(signature(App.onDisconnect).parameters) - 1, 
-                       "onPublish": len(signature(App.onPublish).parameters) - 1, 
-                       "onClose": len(signature(App.onClose).parameters) - 1, 
-                       "onPlay": len(signature(App.onPlay).parameters) - 1, 
-                       "onStop": len(signature(App.onStop).parameters) - 1, 
-                       "onCommand": len(signature(App.onCommand).parameters) - 1, 
-                       "onStatus": len(signature(App.onStatus).parameters) - 1, 
-                       "onResult": len(signature(App.onResult).parameters) - 1, 
-                       "onPublishData": len(signature(App.onPublishData).parameters) - 1, 
-                       "onPlayData": len(signature(App.onPlayData).parameters) - 1
-    }
-    @staticmethod
-    def add_handler(event, handler):
-        """Bind a handler to an event
-        Arguments:
-            event {str} -- The name of the event
-            handler {callable} -- The event handler (please note that, numbers of parameter of the handler must equal to the number of arguments passed by the respective event)
-
-        Raises:
-            TypeError: event must be a 'str'
-            TypeError: handler must be a 'callable'
-            ValueError: raise when argument "event" is not subscribable event
-            TypeError: raise when the number of parameters of a handler does not equal to the number of arguments passed by the event
-        """
-        from inspect import signature
-
-        if not isinstance(event, str):
-            raise TypeError("event must be a 'str', not '{0}'.".format(type(event)))
-        if not callable(handler):
-            raise TypeError("handler must be a callable function, not '{0}'.".format(type(event)))
-        if event not in Event.__SUBSCRIBABLES:
-            raise ValueError("event '{0}' is not subscribable event.".format(event))
-
-        number_of_args = len(signature(handler).parameters)
-        if number_of_args != Event.__SUBSCRIBABLES[event]:
-            raise TypeError("{0}() takes exactly {1} argument(s) ({2} given)".format(event, Event.__SUBSCRIBABLES[event], number_of_args))
-
-        Event.handlers[event] = handler
 
 
 class Wirecast(App):
@@ -1913,9 +1833,6 @@ class FlashServer(object):
         if stream.client is not None:
             inst = self.clients[stream.client.path][0]
             result = inst.onPublishData(stream.client, stream, message)
-            print(message)
-            for attr in dir(stream.close):
-                print("obj.%s = %r" % (attr, getattr(stream.close, attr)))
             if result:
                 for s in (inst.players.get(stream.name, [])):
                     # if _debug: print 'D', stream.name, s.name
@@ -1926,8 +1843,6 @@ class FlashServer(object):
                 if stream.recordfile is not None:
                     stream.recordfile.write(message)
 
-def onConnect_handler(client, *args):
-    print(client.path, "is connected!")
 
 # The main routine to start, run and stop the service
 if __name__ == '__main__':
@@ -1974,7 +1889,6 @@ if __name__ == '__main__':
     else:
         _debug = options.debug
     try:
-        Event.add_handler("onConnect", onConnect_handler)
         agent = FlashServer()
         agent.root = options.root
         agent.start(options.host, options.port)
