@@ -69,10 +69,12 @@ If you want to collaborate with us, feel free to Fork this project and open a pu
 * For Issue
   * Report any Logical Error.
   * Report any Run-Time Error.
+  * Request new features
   * Ask questions if you do not understand something.
 
 * For Pull request
   * Add comments to source code.
+  * Add new features
   * Correct any Logical Error.
   * Correct any Run-Time Error.
 
