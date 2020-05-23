@@ -1414,8 +1414,7 @@ class Event():
                        "onPublishData": len(signature(App.onPublishData).parameters) - 1, 
                        "onPlayData": len(signature(App.onPlayData).parameters) - 1,
                        "onUnpublish": len(signature(App.onUnpublish).parameters) - 1,
-                       "onDelete": len(signature(App.onDelete).parameters) - 1
-    }
+                       "onDelete": len(signature(App.onDelete).parameters) - 1}
     @staticmethod
     def add_handler(event, handler):
         """Bind a handler to an event
@@ -1701,11 +1700,17 @@ class FlashServer(object):
             elif cmd.name == 'FCUnpublish':
                 if hasattr(inst, 'onUnpublish'):
                     result = inst.onUnpublish(client, cmd.args[0])
-                self.unpublishhandler(client, cmd)
+                try:
+                    self.unpublishhandler(client, cmd)
+                except:
+                    pass
             elif cmd.name == 'deleteStream':
                 if hasattr(inst, 'onDelete'):
                     result = inst.onDelete(client, cmd.args[0])
-                self.deletehandler(client, cmd)
+                try:
+                    self.deletehandler(client, cmd)
+                except:
+                    pass
             else:
                 res, code, result = Command(), '_result', None
                 try:
@@ -1937,9 +1942,7 @@ class FlashServer(object):
         if stream.client is not None:
             inst = self.clients[stream.client.path][0]
             result = inst.onPublishData(stream.client, stream, message)
-            print(message)
-            for attr in dir(stream.close):
-                print("obj.%s = %r" % (attr, getattr(stream.close, attr)))
+
             if result:
                 for s in (inst.players.get(stream.name, [])):
                     # if _debug: print 'D', stream.name, s.name
