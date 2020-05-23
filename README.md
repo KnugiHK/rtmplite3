@@ -36,11 +36,9 @@ notices.
 
 # Getting Started #
 
-Dependencies: Python 3.6+ (Perhaps)
+Dependencies: Python 3.6+
 
-Tested environment: Windows 10 1803 with Python 3.8.3rc1
-
-Planned Testing environment: Ubuntu
+Tested environment: Windows 10 1803 with Python 3.8.3rc1; Ubuntu 18.04.4 LTS with Python 3.6.9.
 
 Typically an application can launch this server as follows:
 ```
