@@ -35,7 +35,7 @@ and multitask are used from elsewhere and contain their respective copyright
 notices.
 
 ## Documentation ##
-Instead of looking at the documentation from the source code, I migrated (or migrating) the embedded documentation from the source code to Wiki of this repo.
+Instead of looking at the documentation from the source code, I migrated (or migrating) the embedded documentation from the source code to [Wiki of this repo](https://github.com/KnugiHK/rtmplite3/wiki).
 
 # Getting Started #
 
@@ -55,6 +55,19 @@ To know the command line options use the -h option:
 ```
 $ python rtmp.py -h
 ```
+For your convenience, this repo also provide you a single executable. You may want to check out our [release page](https://github.com/KnugiHK/rtmplite3/releases).
+
+And here is how to use the executable
+```Shell
+# in Linux
+$ chmod +x rtmp-Linux
+$ ./rtmp-Linux
+
+:: in Windows
+> rtmp-Windows.exe
+or double click the file
+```
+
 # Known issues
 1. The program cannot exit with Control+C in Windows
 2. Viewer cannot join the stream after the feed started to broadcast
