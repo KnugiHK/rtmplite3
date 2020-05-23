@@ -34,13 +34,16 @@ Some parts of the documentation are copied here. Other modules such as amf, util
 and multitask are used from elsewhere and contain their respective copyright 
 notices.
 
+## Documentation ##
+Instead of looking at the documentation from the source code, I migrated (or migrating) the embedded documentation from the source code to Wiki of this repo.
+
 # Getting Started #
 
-Dependencies: Python 3.6+ (Perhaps)
+Dependencies: Python 3.6+
 
-Tested environment: Windows 10 1909 with Python 3.8.3rc1
-
-Planned Testing environment: Ubuntu
+Tested environment:
+* Windows 10 1803 with Python 3.8.3rc1
+* Ubuntu 18.04.4 LTS with Python 3.6.9.
 
 Typically an application can launch this server as follows:
 ```
@@ -52,6 +55,9 @@ To know the command line options use the -h option:
 ```
 $ python rtmp.py -h
 ```
+# Known issues
+1. The program cannot exit with Control+C in Windows
+2. Viewer cannot join the stream after the feed started to broadcast
 
 # Contribution #
 If you want to help me to improve the quality of this project, you can submit an issue.
@@ -63,10 +69,12 @@ If you want to collaborate with us, feel free to Fork this project and open a pu
 * For Issue
   * Report any Logical Error.
   * Report any Run-Time Error.
+  * Request new features
   * Ask questions if you do not understand something.
 
 * For Pull request
   * Add comments to source code.
+  * Add new features
   * Correct any Logical Error.
   * Correct any Run-Time Error.
 

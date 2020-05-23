@@ -1937,6 +1937,9 @@ class FlashServer(object):
         if stream.client is not None:
             inst = self.clients[stream.client.path][0]
             result = inst.onPublishData(stream.client, stream, message)
+            print(message)
+            for attr in dir(stream.close):
+                print("obj.%s = %r" % (attr, getattr(stream.close, attr)))
             if result:
                 for s in (inst.players.get(stream.name, [])):
                     # if _debug: print 'D', stream.name, s.name
