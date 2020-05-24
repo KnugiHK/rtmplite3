@@ -1245,10 +1245,11 @@ class Server(object):
                     break
                 if _debug:
                     print('connection received from', remote)
-                sock.setsockopt(
-                    socket.IPPROTO_TCP,
-                    socket.TCP_NODELAY,
-                    1)  # make it non-block
+                sock.setsockopt(socket.IPPROTO_TCP, socket.TCP_NODELAY, 1)  # make it non-block
+                sock.setsockopt(socket.SOL_SOCKET, socket.SO_KEEPALIVE, 1) # Issue #106
+                sock.setsockopt(socket.IPPROTO_TCP, socket.TCP_KEEPIDLE, 10) # Issue #106
+                sock.setsockopt(socket.IPPROTO_TCP, socket.TCP_KEEPINTVL, 10) # Issue #106
+                sock.setsockopt(socket.IPPROTO_TCP, socket.TCP_KEEPCNT, 2) # Issue #106
                 client = Client(sock, self)
         except GeneratorExit:
             pass  # terminate
