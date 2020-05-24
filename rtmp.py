@@ -882,7 +882,7 @@ class FLV(object):
         output = amf.AMFBytesIO()
         amfWriter = amf.AMF0(output)  # TODO: use AMF3 if needed
         amfWriter.write('onMetaData')
-        amfWriter.write({"duration": duration, "videocodecid": 2})
+        amfWriter.write({"duration": duration, "videocodecid": 7, "audiocodecid": 10})
         output.seek(0)
         data = output.read()
         length, ts = len(data), 0
@@ -2010,6 +2010,7 @@ if __name__ == '__main__':
 
     _verbose = options.verbose
     _recording = options.recording
+    
     if _verbose:
         _debug = True
     else:
