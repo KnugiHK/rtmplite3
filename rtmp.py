@@ -819,16 +819,16 @@ class FLV(object):
         self.tsr0 = None
         self.tsr1 = 0
         self.type = type
-        if type in ('record', 'append'):
+        if type in ('record', 'append', 'live'):
             try:
                 os.makedirs(os.path.dirname(path), mode)
             except BaseException:
                 pass
-            if type == 'record' or not os.path.exists(
+            if type == 'record' or type == 'live' or not os.path.exists(
                     path):  # if file does not exist, use record mode
                 self.fp = open(path, 'w+b')
                 # the header and first previousTagSize
-                self.fp.write('FLV\x01\x05\x00\x00\x00\x09\x00\x00\x00\x00')
+                self.fp.write(b'FLV\x01\x05\x00\x00\x00\x09\x00\x00\x00\x00')
                 self.writeDuration(0.0)
             else:
                 self.fp = open(path, 'r+b')
@@ -879,7 +879,7 @@ class FLV(object):
     def writeDuration(self, duration):
         if _debug:
             print('writing duration', duration)
-        output = amf.BytesIO()
+        output = amf.AMFBytesIO()
         amfWriter = amf.AMF0(output)  # TODO: use AMF3 if needed
         amfWriter.write('onMetaData')
         amfWriter.write({"duration": duration, "videocodecid": 2})
@@ -1390,7 +1390,7 @@ class App(object):
             if not os.path.exists(path):
                 return None
             return FLV().open(path)
-        elif mode in ('record', 'append'):
+        elif (mode == 'live' or mode in ('record', 'append')) and _recording:
             path = getfilename(path, name, root)
             return FLV().open(path, mode)
 # elif stream.mode == 'live': FLV().delete(path) # TODO: this is commented
@@ -1796,7 +1796,6 @@ class FlashServer(object):
             # store the client for publisher
             inst.publishers[stream.name] = stream
             inst.onPublish(stream.client, stream)
-
             stream.recordfile = inst.getfile(
                 stream.client.path, stream.name, self.root, stream.mode)
             response = Command(
@@ -2000,9 +1999,17 @@ if __name__ == '__main__':
         default=False,
         action='store_true',
         help='enable verbose mode (display all traffic)')
+    parser.add_option(
+        '-k',
+        '--recording',
+        dest='recording',
+        default=False,
+        action='store_true',
+        help='keep live as a video')
     (options, args) = parser.parse_args()
 
     _verbose = options.verbose
+    _recording = options.recording
     if _verbose:
         _debug = True
     else:
