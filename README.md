@@ -1,5 +1,5 @@
 # What is rtmplite? #
-More details in [rtmplite](/rtmplite.md)
+More details in [rtmplite](https://github.com/KnugiHK/rtmplite3/wiki/rtmplite.md)
 
 > This project was migrated from <https://code.google.com/p/rtmplite> on May 17, 2015  
 > Please see these individual description files for [rtmplite](/rtmplite.md)
