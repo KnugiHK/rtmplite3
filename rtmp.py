@@ -788,19 +788,6 @@ class Command(object):
         output.close()
         return msg
 
-
-def getfilename(path, name, root):
-    '''return the file name for the given stream. The name is derived as root/scope/name.flv where scope is
-    the the path present in the path variable.'''
-    ignore, ignore, scope = path.partition('/')
-    if scope:
-        scope = scope + '/'
-    result = root + scope + name + '.flv'
-    if _debug:
-        print('filename=', result)
-    return result
-
-
 class FLV(object):
     '''An FLV file which converts between RTMP message and FLV tags.'''
 
@@ -1397,6 +1384,17 @@ class App(object):
 # out to avoid accidental delete
         return None
 
+def getfilename(path, name, root):
+    '''return the file name for the given stream. The name is derived as root/scope/name.flv where scope is
+    the the path present in the path variable.'''
+    ignore, ignore, scope = path.partition('/')
+    if scope:
+        scope = scope + '/'
+    result = root + scope + name + '.flv'
+    if _debug:
+        print('filename=', result)
+    return result
+
 class Event():
     """Provide a handy function to add event handle"""
     
@@ -1653,8 +1651,7 @@ class FlashServer(object):
             if client.path in self.clients:
                 inst = self.clients[client.path][0]
                 self.clients[client.path].remove(client)
-            for stream in list(
-                    client.streams.values()):  # for all streams of this client
+            for stream in list(client.streams.values()):  # for all streams of this client
                 self.closehandler(stream)
             client.streams.clear()  # and clear the collection of streams
             # no more clients left, delete the instance.
@@ -1699,19 +1696,19 @@ class FlashServer(object):
                 if hasattr(inst, 'onResult'):
                     result = inst.onResult(client, cmd.args[0])
             elif cmd.name == 'FCUnpublish':
-                if hasattr(inst, 'onUnpublish'):
-                    result = inst.onUnpublish(client, cmd.args[0])
                 try:
                     self.unpublishhandler(client, cmd)
                 except:
                     pass
+                if hasattr(inst, 'onUnpublish'):
+                    result = inst.onUnpublish(client, cmd.args[0])
             elif cmd.name == 'deleteStream':
-                if hasattr(inst, 'onDelete'):
-                    result = inst.onDelete(client, cmd.args[0])
                 try:
                     self.deletehandler(client, cmd)
                 except:
                     pass
+                if hasattr(inst, 'onDelete'):
+                    result = inst.onDelete(client, cmd.args[0])
             else:
                 res, code, result = Command(), '_result', None
                 try:
@@ -1869,8 +1866,8 @@ class FlashServer(object):
                 '>HI', 0, stream.id)
             yield stream.client.writeMessage(m2)
 
-#            response = Command(name='onStatus', id=cmd.id, args=[amf.Object(level='status',code='NetStream.Play.Reset', description=stream.name, details=None)])
-#            yield stream.send(response)
+            response = Command(name='onStatus', id=cmd.id, args=[amf.Object(level='status',code='NetStream.Play.Reset', description=stream.name, details=None)])
+            yield stream.send(response)
 
             response = Command(
                 name='onStatus',
@@ -1884,8 +1881,8 @@ class FlashServer(object):
                         details=None)])
             yield stream.send(response)
 
-#            response = Command(name='onStatus', id=cmd.id, tm=stream.client.relativeTime, args=[amf.Object(level='status',code='NetStream.Play.PublishNotify', description=stream.name, details=None)])
-#            yield stream.send(response)
+            response = Command(name='onStatus', id=cmd.id, tm=stream.client.relativeTime, args=[amf.Object(level='status',code='NetStream.Play.PublishNotify', description=stream.name, details=None)])
+            yield stream.send(response)
 
             if task is not None:
                 multitask.add(task)
