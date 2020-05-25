@@ -67,8 +67,13 @@ import time
 import struct
 import socket
 import traceback
-import multitask
-import amf
+try:
+    from rtmplite3 import multitask, amf
+except:
+    try:
+        import multitask, amf
+    except:
+        exit("Required module not found")
 import hashlib
 import hmac
 import random
