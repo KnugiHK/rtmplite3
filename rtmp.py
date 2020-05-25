@@ -73,7 +73,7 @@ import hashlib
 import hmac
 import random
 
-_debug = False
+_debug = _verbose = _recording = False
 
 
 class ConnectionClosed(Exception):
