@@ -67,13 +67,18 @@ import time
 import struct
 import socket
 import traceback
-import multitask
-import amf
+try:
+    from rtmplite3 import multitask, amf
+except:
+    try:
+        import multitask, amf
+    except:
+        exit("Required module not found")
 import hashlib
 import hmac
 import random
 
-_debug = False
+_debug = _verbose = _recording = False
 
 
 class ConnectionClosed(Exception):
@@ -788,19 +793,6 @@ class Command(object):
         output.close()
         return msg
 
-
-def getfilename(path, name, root):
-    '''return the file name for the given stream. The name is derived as root/scope/name.flv where scope is
-    the the path present in the path variable.'''
-    ignore, ignore, scope = path.partition('/')
-    if scope:
-        scope = scope + '/'
-    result = root + scope + name + '.flv'
-    if _debug:
-        print('filename=', result)
-    return result
-
-
 class FLV(object):
     '''An FLV file which converts between RTMP message and FLV tags.'''
 
@@ -819,16 +811,16 @@ class FLV(object):
         self.tsr0 = None
         self.tsr1 = 0
         self.type = type
-        if type in ('record', 'append'):
+        if type in ('record', 'append', 'live'):
             try:
                 os.makedirs(os.path.dirname(path), mode)
             except BaseException:
                 pass
-            if type == 'record' or not os.path.exists(
+            if type == 'record' or type == 'live' or not os.path.exists(
                     path):  # if file does not exist, use record mode
                 self.fp = open(path, 'w+b')
                 # the header and first previousTagSize
-                self.fp.write('FLV\x01\x05\x00\x00\x00\x09\x00\x00\x00\x00')
+                self.fp.write(b'FLV\x01\x05\x00\x00\x00\x09\x00\x00\x00\x00')
                 self.writeDuration(0.0)
             else:
                 self.fp = open(path, 'r+b')
@@ -879,10 +871,10 @@ class FLV(object):
     def writeDuration(self, duration):
         if _debug:
             print('writing duration', duration)
-        output = amf.BytesIO()
+        output = amf.AMFBytesIO()
         amfWriter = amf.AMF0(output)  # TODO: use AMF3 if needed
         amfWriter.write('onMetaData')
-        amfWriter.write({"duration": duration, "videocodecid": 2})
+        amfWriter.write({"duration": duration, "videocodecid": 7, "audiocodecid": 10})
         output.seek(0)
         data = output.read()
         length, ts = len(data), 0
@@ -1245,10 +1237,11 @@ class Server(object):
                     break
                 if _debug:
                     print('connection received from', remote)
-                sock.setsockopt(
-                    socket.IPPROTO_TCP,
-                    socket.TCP_NODELAY,
-                    1)  # make it non-block
+                sock.setsockopt(socket.IPPROTO_TCP, socket.TCP_NODELAY, 1)  # make it non-block
+                sock.setsockopt(socket.SOL_SOCKET, socket.SO_KEEPALIVE, 1) # Issue #106
+                sock.setsockopt(socket.IPPROTO_TCP, socket.TCP_KEEPIDLE, 10) # Issue #106
+                sock.setsockopt(socket.IPPROTO_TCP, socket.TCP_KEEPINTVL, 10) # Issue #106
+                sock.setsockopt(socket.IPPROTO_TCP, socket.TCP_KEEPCNT, 2) # Issue #106
                 client = Client(sock, self)
         except GeneratorExit:
             pass  # terminate
@@ -1389,12 +1382,23 @@ class App(object):
             if not os.path.exists(path):
                 return None
             return FLV().open(path)
-        elif mode in ('record', 'append'):
+        elif (mode == 'live' or mode in ('record', 'append')) and _recording:
             path = getfilename(path, name, root)
             return FLV().open(path, mode)
 # elif stream.mode == 'live': FLV().delete(path) # TODO: this is commented
 # out to avoid accidental delete
         return None
+
+def getfilename(path, name, root):
+    '''return the file name for the given stream. The name is derived as root/scope/name.flv where scope is
+    the the path present in the path variable.'''
+    ignore, ignore, scope = path.partition('/')
+    if scope:
+        scope = scope + '/'
+    result = root + scope + name + '.flv'
+    if _debug:
+        print('filename=', result)
+    return result
 
 class Event():
     """Provide a handy function to add event handle"""
@@ -1652,8 +1656,7 @@ class FlashServer(object):
             if client.path in self.clients:
                 inst = self.clients[client.path][0]
                 self.clients[client.path].remove(client)
-            for stream in list(
-                    client.streams.values()):  # for all streams of this client
+            for stream in list(client.streams.values()):  # for all streams of this client
                 self.closehandler(stream)
             client.streams.clear()  # and clear the collection of streams
             # no more clients left, delete the instance.
@@ -1698,19 +1701,19 @@ class FlashServer(object):
                 if hasattr(inst, 'onResult'):
                     result = inst.onResult(client, cmd.args[0])
             elif cmd.name == 'FCUnpublish':
-                if hasattr(inst, 'onUnpublish'):
-                    result = inst.onUnpublish(client, cmd.args[0])
                 try:
                     self.unpublishhandler(client, cmd)
                 except:
                     pass
+                if hasattr(inst, 'onUnpublish'):
+                    result = inst.onUnpublish(client, cmd.args[0])
             elif cmd.name == 'deleteStream':
-                if hasattr(inst, 'onDelete'):
-                    result = inst.onDelete(client, cmd.args[0])
                 try:
                     self.deletehandler(client, cmd)
                 except:
                     pass
+                if hasattr(inst, 'onDelete'):
+                    result = inst.onDelete(client, cmd.args[0])
             else:
                 res, code, result = Command(), '_result', None
                 try:
@@ -1795,7 +1798,6 @@ class FlashServer(object):
             # store the client for publisher
             inst.publishers[stream.name] = stream
             inst.onPublish(stream.client, stream)
-
             stream.recordfile = inst.getfile(
                 stream.client.path, stream.name, self.root, stream.mode)
             response = Command(
@@ -1869,8 +1871,8 @@ class FlashServer(object):
                 '>HI', 0, stream.id)
             yield stream.client.writeMessage(m2)
 
-#            response = Command(name='onStatus', id=cmd.id, args=[amf.Object(level='status',code='NetStream.Play.Reset', description=stream.name, details=None)])
-#            yield stream.send(response)
+            response = Command(name='onStatus', id=cmd.id, args=[amf.Object(level='status',code='NetStream.Play.Reset', description=stream.name, details=None)])
+            yield stream.send(response)
 
             response = Command(
                 name='onStatus',
@@ -1884,8 +1886,8 @@ class FlashServer(object):
                         details=None)])
             yield stream.send(response)
 
-#            response = Command(name='onStatus', id=cmd.id, tm=stream.client.relativeTime, args=[amf.Object(level='status',code='NetStream.Play.PublishNotify', description=stream.name, details=None)])
-#            yield stream.send(response)
+            response = Command(name='onStatus', id=cmd.id, tm=stream.client.relativeTime, args=[amf.Object(level='status',code='NetStream.Play.PublishNotify', description=stream.name, details=None)])
+            yield stream.send(response)
 
             if task is not None:
                 multitask.add(task)
@@ -1999,9 +2001,18 @@ if __name__ == '__main__':
         default=False,
         action='store_true',
         help='enable verbose mode (display all traffic)')
+    parser.add_option(
+        '-k',
+        '--recording',
+        dest='recording',
+        default=False,
+        action='store_true',
+        help='keep live as a video')
     (options, args) = parser.parse_args()
 
     _verbose = options.verbose
+    _recording = options.recording
+    
     if _verbose:
         _debug = True
     else:
