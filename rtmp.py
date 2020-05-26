@@ -315,7 +315,7 @@ class Message(object):
 
 class Protocol(object):
     PING_SIZE, DEFAULT_CHUNK_SIZE, HIGH_WRITE_CHUNK_SIZE, PROTOCOL_CHANNEL_ID = 1536, 128, 4096, 2  # constants
-    READ_WIN_SIZE, WRITE_WIN_SIZE = 1000000, 1073741824
+    READ_WIN_SIZE, WRITE_WIN_SIZE = 5000000, 5000000
 
     def __init__(self, sock):
         self.stream = SockStream(sock)
