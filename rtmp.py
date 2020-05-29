@@ -1379,8 +1379,6 @@ class App(object):
         elif (mode == 'live' or mode in ('record', 'append')) and _recording:
             path = getfilename(path, name, root)
             return FLV().open(path, mode)
-# elif stream.mode == 'live': FLV().delete(path) # TODO: this is commented
-# out to avoid accidental delete
         return None
 
 def getfilename(path, name, root):
