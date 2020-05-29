@@ -418,10 +418,8 @@ class Protocol(object):
             scheme = None
             for s in range(0, 2):
                 digest_offset = (sum([data[i] for i in range(772, 776)]) %
-                                 728 +
-                                 776) if s == 1 else (sum([data[i] for i in range(8, 12)]) %
-                                                      728 +
-                                                      12)
+                                    728 + 776) if s == 1 else (sum([data[i] \
+                                    for i in range(8, 12)]) % 728 + 12)
                 temp = data[0:digest_offset] + \
                     data[digest_offset + 32:Protocol.PING_SIZE]
                 hash = Protocol._calculateHash(
@@ -433,40 +431,24 @@ class Protocol(object):
                 if _debug:
                     print('invalid RTMP connection data, assuming scheme 0')
                 scheme = 0
-            client_dh_offset = (sum([data[i] for i in range(768, 772)]) %
-                                632 +
-                                8) if scheme == 1 else (sum([data[i] for i in range(1532, 1536)]) %
-                                                        632 +
-                                                        772)
+            client_dh_offset = Protocol._calculate_offset_1(data, scheme)
             outgoingKp = data[client_dh_offset:client_dh_offset + 128]
             handshake = struct.pack(
                 '>IBBBB', 0, 1, 2, 3, 4) + os.urandom(Protocol.PING_SIZE - 8)
-            server_dh_offset = (sum([handshake[i] for i in range(768, 772)]) %
-                                632 +
-                                8) if scheme == 1 else (sum([handshake[i] for i in range(1532, 1536)]) %
-                                                        632 +
-                                                        772)
+            server_dh_offset = Protocol._calculate_offset_1(handshake, scheme)
             keys = Protocol._generateKeyPair()  # (public, private)
             handshake = handshake[:server_dh_offset] + \
                 keys[0][0:128] + handshake[server_dh_offset + 128:]
             if chunk_type > 0x03:
                 raise Exception('encryption is not supported')
-            server_digest_offset = (sum([handshake[i] for i in range(772, 776)]) %
-                                    728 +
-                                    776) if scheme == 1 else (sum([handshake[i] for i in range(8, 12)]) %
-                                                              728 +
-                                                              12)
+            server_digest_offset = Protocol._calculate_offset_2(handshake, scheme)
             temp = handshake[0:server_digest_offset] + \
                 handshake[server_digest_offset + 32:Protocol.PING_SIZE]
             hash = Protocol._calculateHash(temp, Protocol.SERVER_KEY[:36])
             handshake = handshake[:server_digest_offset] + \
                 hash + handshake[server_digest_offset + 32:]
             buffer = data[:Protocol.PING_SIZE - 32]
-            key_challenge_offset = (sum([buffer[i] for i in range(772, 776)]) %
-                                    728 +
-                                    776) if scheme == 1 else (sum([buffer[i] for i in range(8, 12)]) %
-                                                              728 +
-                                                              12)
+            key_challenge_offset = Protocol._calculate_offset_2(buffer, scheme)
             challenge_key = data[key_challenge_offset:key_challenge_offset + 32]
             hash = Protocol._calculateHash(
                 challenge_key, Protocol.SERVER_KEY[:68])
@@ -479,6 +461,18 @@ class Protocol(object):
     @staticmethod
     def _calculateHash(msg, key):  # Hmac-sha256
         return hmac.new(key, msg, hashlib.sha256).digest()
+    
+    @staticmethod
+    def _calculate_offset_1(data, scheme):
+        return (sum([data[i] for i in range(768, 772)]) %
+                    632 + 8) if scheme == 1 else (sum([data[i] \
+                    for i in range(1532, 1536)]) % 632 + 772)
+
+    @staticmethod
+    def _calculate_offset_2(data, scheme):
+        return (sum([data[i] for i in range(772, 776)]) %
+                    728 + 776) if scheme == 1 else (sum([data[i] \
+                    for i in range(8, 12)]) % 728 + 12)
 
     @staticmethod
     def _generateKeyPair():  # dummy key pair since we don't support encryption
