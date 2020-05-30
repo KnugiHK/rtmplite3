@@ -79,6 +79,7 @@ import hmac
 import random
 
 _debug = _verbose = _recording = False
+_version, _build = "v0.1.9", "20200530"
 
 
 class ConnectionClosed(Exception):
@@ -1964,7 +1965,7 @@ def onConnect_handler(client, *args):
 # The main routine to start, run and stop the service
 if __name__ == '__main__':
     from optparse import OptionParser
-    parser = OptionParser(version='v0.1.7, 25/05/2020')
+    parser = OptionParser(version='%s, %s' % (_version, _build))
     parser.add_option(
         '-i',
         '--host',
@@ -2019,7 +2020,7 @@ if __name__ == '__main__':
         agent = FlashServer()
         agent.root = options.root
         agent.start(options.host, options.port)
-        print(time.asctime(), 'RTMPLite Server Starts - %s:%d (v0.1.7)' % (options.host, options.port))
+        print(time.asctime(), 'RTMPLite Server Starts - %s:%d %s' % (options.host, options.port, _version))
         multitask.run()
     except KeyboardInterrupt:
         pass
