@@ -1371,6 +1371,11 @@ class App(object):
         return True  # should return True so that data will be actually played in that stream
 
     def getfile(self, path, name, root, mode):
+        if root[-1] != "\\" or root[-1] != "/":
+            if "nt" in os.name:
+                root += "\\"
+            else:
+                root += "/"
         if mode == 'play':
             path = getfilename(path, name, root)
             if not os.path.exists(path):
