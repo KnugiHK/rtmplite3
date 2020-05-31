@@ -68,7 +68,7 @@ import struct
 import socket
 import traceback
 try:
-    from rtmplite3 import multitask, amf
+    from rtmplite3 import multitask, amf # try import from package
 except:
     try:
         import multitask, amf
