@@ -44,6 +44,15 @@ Tested environment:
 * Windows 10 1803 with Python 3.8.3rc1
 * Ubuntu 18.04.4 LTS with Python 3.6.9.
 
+First, download all source files from this repo or install rtmplite3 from pip:
+```shell
+# Download from this repo
+git clone https://github.com/KnugiHK/rtmplite3.git
+
+# Install from pip
+pip install rtmplite3
+```
+
 Typically an application can launch this server as follows:
 ```
 $ python rtmp.py -d
