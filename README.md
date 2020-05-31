@@ -22,8 +22,8 @@ I am working on a [self-host video streaming](https://github.com/KnugiHK/video-s
 # Branches #
 This repo has three branches including master, dev and svs (self-host streaming).
 
-* master: main branch; stable
-* dev: development branch; maybe buggy
+* master: release branch; stable
+* dev: development branch; maybe buggy or even can't run at all
 * svs: customized branch for self-host video streaming project
 
 # RTMP server #
