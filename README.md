@@ -44,7 +44,7 @@ Tested environment:
 * Windows 10 1803 with Python 3.8.3rc1
 * Ubuntu 18.04.4 LTS with Python 3.6.9.
 
-First, download all source files from this repo or install rtmplite3 from pip:
+First, clone all source files from this repo or install rtmplite3 from pip:
 ```shell
 # Download from this repo
 git clone https://github.com/KnugiHK/rtmplite3.git
@@ -53,7 +53,7 @@ git clone https://github.com/KnugiHK/rtmplite3.git
 pip install rtmplite3
 ```
 
-Typically an application can launch this server as follows:
+Typically, an application can launch this server as follows if you clone this repo instead of install from pip:
 ```
 $ python rtmp.py -d
 ```
