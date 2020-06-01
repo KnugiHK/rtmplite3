@@ -711,8 +711,7 @@ class Command(object):
             cmdData=None,
             args=[]):
         '''Create a new command with given type, name, id, cmdData and args list.'''
-        self.type, self.name, self.id, self.time, self.cmdData, self.args = type, name, id, tm, cmdData, args[
-            :]
+        self.type, self.name, self.id, self.time, self.cmdData, self.args = type, name, id, tm, cmdData, args[:]
 
     def __repr__(self):
         return ("<Command type=%r name=%r id=%r data=%r args=%r>" %
