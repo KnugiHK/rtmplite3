@@ -1,4 +1,5 @@
-# What is rtmplite? #
+# What is rtmplite3? #
+This is a fork of rtmplite with conversion of Python 2 to Python 3
 More details in [rtmplite](https://github.com/KnugiHK/rtmplite3/wiki/rtmplite)
 
 > This project was migrated from <https://code.google.com/p/rtmplite> on May 17, 2015  
