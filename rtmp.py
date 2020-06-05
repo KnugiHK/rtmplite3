@@ -1417,6 +1417,17 @@ class Event():
                        "onUnpublish": len(signature(App.onUnpublish).parameters) - 1,
                        "onDelete": len(signature(App.onDelete).parameters) - 1}
     @staticmethod
+    def add(event):
+        """A decorator to call add_handler
+        """
+        def handler(*args, **kwargs):
+            if len(args) > 0:
+                Event.add_handler(event, args[0])
+            else:
+                raise ValueError("A function must be defined in this decorator.")
+        return handler
+
+    @staticmethod
     def add_handler(event, handler):
         """Bind a handler to an event
         Arguments:
@@ -1958,6 +1969,7 @@ class FlashServer(object):
     def deletehandler(self, client, cmd):
         raise NotImplementedError()
 
+@Event.add("onConnect")
 def onConnect_handler(client, *args):
     print("App '{0}' is connected!".format(client.path))
 
@@ -2015,7 +2027,6 @@ if __name__ == '__main__':
     else:
         _debug = options.debug
     try:
-        Event.add_handler("onConnect", onConnect_handler)
         agent = FlashServer()
         agent.root = options.root
         agent.start(options.host, options.port)
