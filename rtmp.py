@@ -441,7 +441,7 @@ class Protocol(object):
             handshake = handshake[:server_dh_offset] + \
                 keys[0][0:128] + handshake[server_dh_offset + 128:]
             if chunk_type > 0x03:
-                raise Exception('encryption is not supported')
+                raise ValueError('RTMP encryption is not supported')
             server_digest_offset = Protocol._calculate_offset_2(handshake, scheme)
             temp = handshake[0:server_digest_offset] + \
                 handshake[server_digest_offset + 32:Protocol.PING_SIZE]
@@ -2033,6 +2033,6 @@ if __name__ == '__main__':
         print(time.asctime(), 'RTMPLite Server Starts - %s:%d %s' % (options.host, options.port, _version))
         multitask.run()
     except KeyboardInterrupt:
-        pass
+        agent.stop()
     
     print(time.asctime(), 'RTMPLite Server Stops')
