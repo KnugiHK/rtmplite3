@@ -89,12 +89,12 @@ class ConnectionClosed(Exception):
 def truncate(data, max=100):
     data1 = data and len(data) > max and data[:max]
     if isinstance(data1, str):
-        data2 = '...(%d)' % (len(data),) or data
+        data2 = f'...({len(data)})' or data
     elif isinstance(data1, bytes):
-        data2 = b'...(%d)' % (len(data),) or data
+        data2 = b'...(%d)' % len(data) or data
     else:
         data1 = str(data1)
-        data2 = '...(%d)' % (len(data),) or data
+        data2 = f'...({len(data)})' or data
     return str(data1 + data2)
 
 
@@ -115,13 +115,13 @@ class SockStream(object):
                     data, self.buffer = self.buffer[:count], self.buffer[count:]
                     return(data)
                 if _verbose:
-                    print('socket.read[%d] calling recv()' % (count,))
+                    print(f'socket.read[{count}] calling recv()')
                 # read more from socket
                 data = (yield multitask.recv(self.sock, 4096))
                 if not data:
                     raise ConnectionClosed
                 if _verbose:
-                    print('socket.read[%d] %r' % (len(data), truncate(data)))
+                    print(f'socket.read[{len(data)}] {truncate(data)}')
                 self.bytesRead += len(data)
                 self.buffer += data
         except Exception as e:
@@ -138,7 +138,7 @@ class SockStream(object):
             chunk, data = data[:4096], data[4096:]
             self.bytesWritten += len(chunk)
             if _verbose:
-                print(('socket.write[%d] %r' % (len(chunk), truncate(chunk))))
+                print(f'socket.write[{len(chunk)}] {truncate(chunk)}' )
             try:
                 yield multitask.send(self.sock, chunk)
             except BaseException:
@@ -266,15 +266,7 @@ class Header(object):
 
     def __repr__(self):
         return (
-            "<Header channel=%r time=%r size=%r type=%s (%r) streamId=%r>" %
-            (self.channel,
-             self.time,
-             self.size,
-             Message.type_name.get(
-                 self.type,
-                 'unknown'),
-                self.type,
-                self.streamId))
+            f"<Header channel={self.channel} time={self.time} size={self.size} type={Message.type_name.get(self.type,'unknown')} ({self.type}) streamId={self.streamId}>")
 
     def dup(self):
         return Header(
@@ -299,16 +291,15 @@ class Message(object):
     # define properties type, streamId and time to access
     # self.header.(property)
     for p in ['type', 'streamId', 'time']:
-        exec('def _g%s(self): return self.header.%s' % (p, p))
-        exec('def _s%s(self, %s): self.header.%s = %s' % (p, p, p, p))
-        exec('%s = property(fget=_g%s, fset=_s%s)' % (p, p, p))
+        exec(f'def _g{p}(self): return self.header.{p}')
+        exec(f'def _s{p}(self, {p}): self.header.{p} = {p}')
+        exec(f'{p} = property(fget=_g{p}, fset=_s{p})')
 
     @property
     def size(self): return len(self.data)
 
     def __repr__(self):
-        return ("<Message header=%r data=%r>" %
-                (self.header, truncate(self.data)))
+        return (f"<Message header={self.header} data={truncate(self.data)}>")
 
     def dup(self):
         return Message(self.header.dup(), self.data[:])
@@ -343,7 +334,7 @@ class Protocol(object):
         elif msg.type == Message.CHUNK_SIZE:
             self.readChunkSize = struct.unpack('>L', msg.data)[0]
             if _debug:
-                print("set read chunk size to %d" % self.readChunkSize)
+                print(f"set read chunk size to {self.readChunkSize}")
         elif msg.type == Message.WIN_ACK_SIZE:
             self.readWinSize, self.readWinSize0 = struct.unpack(
                 '>L', msg.data)[0], self.stream.bytesRead
@@ -402,7 +393,7 @@ class Protocol(object):
         '''Parses the rtmp handshake'''
         data = (yield self.stream.read(Protocol.PING_SIZE + 1))  # bound version and first ping
         if _debug:
-            print(('socket.read[%d] %r' % (len(data), truncate(str(data)))))
+            print(f'socket.read[{len(data)}] {truncate(data)}')
         data = Protocol.handshakeResponse(data)
         yield self.stream.write(data)
         data = (yield self.stream.read(Protocol.PING_SIZE))
@@ -515,7 +506,7 @@ class Protocol(object):
                 data = (yield self.stream.read(4))
                 header.extendedTime = struct.unpack('!I', data)[0]
                 if _debug:
-                    print('extended time stamp', '%x' % (header.extendedTime,))
+                    print('extended time stamp:', header.extendedTime)
             else:
                 header.extendedTime = None
 
@@ -525,11 +516,11 @@ class Protocol(object):
             elif hdrtype in (Header.MESSAGE, Header.TIME):
                 header.hdrtype = hdrtype
 
-            # print header.type, '0x%02x'%(hdrtype,), header.time,
+            # print header.type, '0x%02x' % (hdrtype,), header.time,
             # header.currentTime
 
             # if _debug: print 'R', header, header.currentTime,
-            # header.extendedTime, '0x%x'%(hdrsize,)
+            # header.extendedTime, '0x%x' % (hdrsize,)
 
             # are we continuing an incomplete packet?
             data = self.incompletePackets.get(channel, b"")
@@ -563,8 +554,7 @@ class Protocol(object):
                     if channel in self.incompletePackets:
                         del self.incompletePackets[channel]
                         if _verbose:
-                            print(('aggregated %r bytes message: readChunkSize(%r) x %r' % (
-                                len(data), self.readChunkSize, len(data) / self.readChunkSize)))
+                            print(f'aggregated {len(data)} bytes message: readChunkSize({self.readChunkSize}) x {len(data) / self.readChunkSize}')
                 else:
                     data, self.incompletePackets[channel] = data[:header.size], data[header.size:]
 
@@ -612,8 +602,7 @@ class Protocol(object):
 
                         backpointer = struct.unpack('!I', aggdata[0:4])[0]
                         if backpointer != subsize:
-                            print(('Warning aggregate submsg backpointer=%r != %r' % (
-                                backpointer, subsize)))
+                            print(f'Warning aggregate submsg backpointer={backpointer} != {subsize}')
                         # skip back pointer, go to next message
                         aggdata = aggdata[4:]
                 else:
@@ -714,8 +703,7 @@ class Command(object):
         self.type, self.name, self.id, self.time, self.cmdData, self.args = type, name, id, tm, cmdData, args[:]
 
     def __repr__(self):
-        return ("<Command type=%r name=%r id=%r data=%r args=%r>" %
-                (self.type, self.name, self.id, self.cmdData, self.args))
+        return (f"<Command type={self.type} name={self.name} id={self.id} data={self.cmdData} args={self.args}>")
 
     def setArg(self, arg):
         self.args.append(arg)
@@ -1083,17 +1071,8 @@ class Client(Protocol):
             if cmd.name == 'connect':
                 self.agent = cmd.cmdData
                 if _debug:
-                    print(
-                        'connect',
-                        ', '.join(
-                            [
-                                '%s=%r' %
-                                (x,
-                                 getattr(
-                                     self.agent,
-                                     x)) for x in 'app flashVer swfUrl tcUrl fpad capabilities audioCodecs videoCodecs videoFunction pageUrl objectEncoding'.split() if hasattr(
-                                    self.agent,
-                                    x)]))
+                    print('connect',', '.join([f'{x}={getattr(self.agent,x)}' for x in 'app flashVer swfUrl tcUrl fpad capabilities\
+                         audioCodecs videoCodecs videoFunction pageUrl objectEncoding'.split() if hasattr(self.agent,x)]))
                 self.objectEncoding = self.agent.objectEncoding if hasattr(
                     self.agent, 'objectEncoding') else 0.0
                 yield self.server.queue.put((self, cmd.args))  # new connection
@@ -1443,15 +1422,15 @@ class Event():
         from inspect import signature
 
         if not isinstance(event, str):
-            raise TypeError("event must be a 'str', not '{0}'.".format(type(event)))
+            raise TypeError(f"event must be a 'str', not '{type(event)}'.")
         if not callable(handler):
-            raise TypeError("handler must be a callable function, not '{0}'.".format(type(event)))
+            raise TypeError(f"handler must be a callable function, not '{type(event)}'.")
         if event not in Event.__SUBSCRIBABLES:
-            raise ValueError("event '{0}' is not subscribable event.".format(event))
+            raise ValueError(f"event '{event}' is not subscribable event.")
 
         number_of_args = len(signature(handler).parameters)
         if number_of_args != Event.__SUBSCRIBABLES[event]:
-            raise TypeError("{0}() takes exactly {1} argument(s) ({2} given)".format(event, Event.__SUBSCRIBABLES[event], number_of_args))
+            raise TypeError(f"{event}() takes exactly {Event.__SUBSCRIBABLES[event]} argument(s) ({number_of_args} given)")
 
         Event.handlers[event] = handler
 
@@ -1536,7 +1515,7 @@ class FlashServer(object):
                 sock.bind((host, port))
             except OSError:
                 if _debug:
-                    print('port (%s) already in use' % port)
+                    print(f'port ({port}) already in use')
                 exit()
             if _debug:
                 print('listening on ', sock.getsockname())
@@ -1971,12 +1950,12 @@ class FlashServer(object):
 
 @Event.add("onConnect")
 def onConnect_handler(client, *args):
-    print("App '{0}' is connected!".format(client.path))
+    print(f"App '{client.path}' is connected!")
 
 # The main routine to start, run and stop the service
 if __name__ == '__main__':
     from optparse import OptionParser
-    parser = OptionParser(version='%s, %s' % (_version, _build))
+    parser = OptionParser(version=f'{_version}, {_build}')
     parser.add_option(
         '-i',
         '--host',
@@ -2030,7 +2009,7 @@ if __name__ == '__main__':
         agent = FlashServer()
         agent.root = options.root
         agent.start(options.host, options.port)
-        print(time.asctime(), 'RTMPLite Server Starts - %s:%d %s' % (options.host, options.port, _version))
+        print(time.asctime(), f'RTMPLite Server Starts - {options.host}:{options.port} {_version}')
         multitask.run()
     except KeyboardInterrupt:
         agent.stop()
