@@ -40,9 +40,27 @@ import traceback
 import time
 import urllib.parse
 import socket
-import multitask
-from rtmp import Protocol, Message, Command, ConnectionClosed, Stream, FLV
-from amf import Object
+try:
+    from rtmplite3 import multitask # try import from package
+except:
+    try:
+        import multitask
+    except:
+        exit("Required module not found")
+try:
+    from rtmplite3.rtmp import Protocol, Message, Command, ConnectionClosed, Stream, FLV
+except:
+    try:
+        from rtmp import Protocol, Message, Command, ConnectionClosed, Stream, FLV
+    except:
+        exit("Required module not found")
+try:
+    from rtmplite3.amf import Object
+except:
+    try:
+        from amf import Object
+    except:
+        exit("Required module not found")
 
 _debug = False
 
