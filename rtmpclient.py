@@ -82,13 +82,13 @@ class Client(Protocol):
     # after TCP connection completes.
     def handshake(self):
         # send first handshake
-        yield self.stream.write('\x03' + '\x00' * (Protocol.PING_SIZE))
+        yield self.stream.write(b'\x03' + b'\x00' * (Protocol.PING_SIZE))
         data = (yield self.stream.read(Protocol.PING_SIZE + 1))
         yield self.stream.write(data[1:])  # send second handshake
         data = (yield self.stream.read(Protocol.PING_SIZE))
         multitask.add(self.parse())
         multitask.add(self.write())  # launch the reader and writer tasks
-        raise StopIteration(self)
+        return self
 
     def parse(self):  # started by handshake, to parse incoming messages.
         try:
@@ -131,11 +131,11 @@ class Client(Protocol):
             res = yield self.queue.get(timeout=timeout, criteria=lambda x: x is None or x.id == callId)
             result = res if res is not None and res.name == '_result' else None
             fault = res if res is None or res.name == '_error' else None
-            raise StopIteration(result, fault)
+            return result, fault
         except multitask.Timeout:
             if _debug:
                 print('Client.send timed out')
-            raise StopIteration(None, None)
+            return None, None
 
     # invoked by base class framework to handle a receive message.
     def messageReceived(self, msg):
@@ -190,7 +190,7 @@ class NetConnection(object):
         try:
             sock.connect((host, int(port)))
         except BaseException:
-            raise StopIteration(False)
+            return False
         try:
             sock.setsockopt(
                 socket.IPPROTO_TCP,
@@ -200,8 +200,8 @@ class NetConnection(object):
             result, fault = yield self.client.send(Command(name='connect', cmdData=self.data, args=args), timeout=timeout)
             if _debug:
                 print('NetConnection.connect result=', result, 'fault=', fault)
-            raise StopIteration(result is not None)
-        except BaseException:
+            return result is not None
+        except BaseException as e:
             if _debug:
                 print(
                     'NetConnection.connect failed to do handshake',
@@ -210,7 +210,7 @@ class NetConnection(object):
                 sock.close()
             except BaseException:
                 pass
-            raise StopIteration(False)
+            return False
 
     def close(self):  # disconnect the connection with the server
         if self.client is not None:
@@ -241,23 +241,23 @@ class NetStream(object):
             stream.queue, stream.id = multitask.SmartQueue(), int(
                 result.args[0])  # replace with SmartQueue
             self.nc.client.streams[stream.id] = stream
-            raise StopIteration(self)
+            return self
         else:
-            raise StopIteration(None)
+            return None
 
     def publish(self, name, mode='live', timeout=None):
         yield self.send(Command(name='publish', args=[name, mode]))
         msg = yield self.stream.recv()
         if _debug:
             print('publish result=', msg)
-        raise StopIteration(True)
+        return True
 
     def play(self, name, timeout=None):
         yield self.send(Command(name='play', args=[name]))
         msg = yield self.stream.recv()
         if _debug:
             print('play response=', msg)
-        raise StopIteration(True)
+        return True
 
     def close(self):
         yield self.send(Command(name='closeStream'))
@@ -303,14 +303,12 @@ class Result(Exception):
 class Resource(object):
     __slots__ = ['url', 'type', 'mode']
 
-    def __init__(
-        self): self.url = self.type = self.mode = None
-    self.queue = multitask.SmartQueue()
+    def __init__(self): self.url = self.type = self.mode = None; self.queue = multitask.SmartQueue()
 
     def get(self, timeout=None, criteria=None): result = yield self.queue.get(
-        timeout=timeout, criteria=criteria); raise StopIteration(result)
+        timeout=timeout, criteria=criteria); return result
     def put(self, item, timeout=None): result = yield self.queue.put(
-        item, timeout=timeout); raise StopIteration(result)
+        item, timeout=timeout); return result
 
 
 # connect to RTMP URL and play the stream identified by id in URL.
@@ -327,7 +325,7 @@ class RTMPReader(Resource):
         if not self.stream:
             if _debug:
                 print('missing id parameter in rtmp url')
-            raise StopIteration(None)  # id property is MUST in rtmp URL.
+            return None  # id property is MUST in rtmp URL.
         if _debug:
             print(
                 'RTMPReader.open timeout=',
@@ -339,15 +337,15 @@ class RTMPReader(Resource):
         self.nc = NetConnection()
         result = yield self.nc.connect(self.url, timeout=self.timeout)
         if not result:
-            raise StopIteration(None)
+            return None
         if self.stream:
             self.ns = yield NetStream().create(self.nc, timeout=self.timeout)
             result = yield self.ns.play(self.stream, timeout=self.timeout)
             if not result:
-                raise StopIteration(None)
+                return None
         self._gen = self.run()
         multitask.add(self._gen)
-        raise StopIteration(self)
+        return self
 
     def close(self):
         if self.nc is not None:
@@ -373,13 +371,17 @@ class RTMPWriter(Resource):
         Resource.__init__(self)
         self.type, self.mode, self.timeout, self.stream = 'rtmp', 'w', None, ''
 
+    def get_stream(self, url):
+        temp = url.rindex("/")
+        return url[:temp], url[temp + 1:]
+
     def open(self, url):
-        self.url, options = url, dict(
-            [tuple(x.split('=', 1) + [''])[:2] for x in url[7:].partition('?')[2].split('&')])
-        self.timeout, self.stream = int(
-            options['timeout']) if 'timeout' in options else 10, options['id'] if 'id' in options else None
-        if not self.stream:
-            raise StopIteration(None)  # The id parameter is a MUST
+        self.url, self.stream = self.get_stream(url)
+        options = url, dict([tuple(x.split('=', 1) + [''])[:2] for x in url[7:].partition('?')[2].split('&')])
+        self.timeout = int(options['timeout']) if 'timeout' in options else 10
+
+        #if not self.stream:
+        #    return None  # The id parameter is a MUST
         if _debug:
             print(
                 'RTMPWriter.open timeout=',
@@ -391,13 +393,13 @@ class RTMPWriter(Resource):
         self.nc = NetConnection()
         result = yield self.nc.connect(self.url, timeout=self.timeout)
         if not result:
-            raise StopIteration(None)
+            return None
         if self.stream:
             self.ns = yield NetStream().create(self.nc, timeout=self.timeout)
             result = yield self.ns.publish(self.stream, timeout=self.timeout)
             if not result:
-                raise StopIteration(None)
-        raise StopIteration(self)
+                return None
+        return self
 
     def close(self):
         if self.nc is not None:
@@ -412,12 +414,12 @@ class RTMPWriter(Resource):
 
 class HTTPReader(
         Resource):  # Fetch a FLV file from a web URL. TODO: implement this
-    def open(self, url): raise StopIteration(False)
+    def open(self, url): return False
 
 
 class HTTPWriter(
         Resource):  # Put a FLV file to a web URL. TODO: implement this
-    def open(self, url): raise StopIteration(False)
+    def open(self, url): return False
 
 
 # Read a local FLV file, one message at a time, and implement
@@ -436,9 +438,9 @@ class FLVReader(Resource):
         if self.fp:
             self._gen = self.fp.reader(self)
             multitask.add(self._gen)
-            raise StopIteration(self)
+            return self
         else:
-            raise StopIteration(None)
+            return None
 
     def close(self):
         if self.fp:
@@ -471,7 +473,7 @@ class FLVWriter(Resource):  # Write a local FLV file.
         self.url, u = url, urllib.parse.urlparse(url, 'file')
         self.fp = FLV().open(u.path, 'record')
         yield  # yield is needed since there is no other blocking operation.
-        raise StopIteration(self if self.fp else None)
+        return self if self.fp else None
 
     def close(self):
         if self.fp is not None:
@@ -501,7 +503,7 @@ def open(url, mode='r'):
         'file-r': FLVReader,
         'file-w': FLVWriter}
     r = yield types[type + '-' + mode]().open(url=url)
-    raise StopIteration(r)
+    return r
 
 
 def copy(src, dest):
@@ -533,7 +535,7 @@ def _copy_loop(filename, ns, enableAudio, enableVideo):
     '''Local function used by connect() to stream from file to NetStream in a loop.'''
     reader = yield FLVReader().open(filename)
     if not reader:
-        raise StopIteration('Failed to open file %r' % (filename,))
+        return 'Failed to open file %r' % (filename,)
     try:
         while True:
             msg = yield reader.get()
@@ -587,29 +589,25 @@ def connect(
     nc = NetConnection()
     result = yield nc.connect(url, timeout, *params)
     if not result:
-        raise StopIteration('Failed to connect %r' % (url,))
+        return 'Failed to connect %r' % (url,)
 
     if publishStream:
         ns1 = yield NetStream().create(nc, timeout=timeout)
         if not ns1:
-            raise StopIteration('Failed to create publish stream')
+            return 'Failed to create publish stream'
         result = yield ns1.publish(publishStream, timeout=timeout)
         if not result:
             yield nc.close()
-            raise StopIteration(
-                'Failed to create publish stream %r' %
-                (publishStream,))
+            return 'Failed to create publish stream %r' % publishStream
 
     if playStream:
         ns2 = yield NetStream().create(nc, timeout=timeout)
         if not ns2:
-            raise StopIteration('Failed to create play stream')
+            return 'Failed to create play stream'
         result = yield ns2.play(playStream, timeout=timeout)
         if not result:
             yield nc.close()
-            raise StopIteration(
-                'Failed to create play stream %r' %
-                (playStream,))
+            return 'Failed to create play stream %r' % playStream
 
     if publishFile and publishStream:  # copy from file to stream
         gen = _copy_loop(publishFile, ns1, enableAudio, enableVideo)
@@ -630,7 +628,7 @@ def connect(
             gen.close()
         yield nc.close()
 
-    raise StopIteration(None)
+    return None
 
 
 # --------------------------------
@@ -639,8 +637,7 @@ def connect(
 
 _usage = '''usage: python rtmpclient.py [-d] src dest
   -d: verbose mode prints trace statements
-  src and dest: either "rtmp" URL or a file name. Use "id" to specify stream name, e.g., rtmp://localhost/myapp?id=user1
-  This software depends on Python 2.6 (won't work with 2.4 or 3.0)'''
+  src and dest: either "rtmp" URL or a file name. Use "id" to specify stream name, e.g., rtmp://localhost/myapp?id=user1'''
 
 # The main routine to invoke the copy method
 if __name__ == '__main__':
