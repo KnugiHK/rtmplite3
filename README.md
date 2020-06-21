@@ -53,9 +53,16 @@ git clone https://github.com/KnugiHK/rtmplite3.git
 # Install from pip
 pip install rtmplite3
 ```
+**There are multiple methods for you to run the RTMP server directly**
 
-Typically, an application can launch this server as follows if you clone this repo instead of install from pip:
+1. If you install the latest version (0.2.5) from pip, you can now start the RTMP server with the following methods:
+```Shell
+$ rtmplite3 -d #or
+$ python -m rtmplite3 -d
 ```
+
+2. Typically, an application can launch this server as follows if you clone this repo instead of install from pip:
+```Shell
 $ python rtmp.py -d
 ```
 The -d option enables debug trace so you know what is happening in the server. 
@@ -68,7 +75,7 @@ $ python rtmp.py -h
 ```
 For your convenience, this repo also provide you a single executable. You may want to check out our [release page](https://github.com/KnugiHK/rtmplite3/releases).
 
-And here is how to use the executable
+3. And here is how to use the executable
 ```Shell
 # in Linux
 $ chmod +x rtmp-Linux
