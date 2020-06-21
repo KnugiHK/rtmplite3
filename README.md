@@ -1,4 +1,5 @@
-# What is rtmplite? #
+# What is rtmplite3? #
+This is a fork of rtmplite with conversion of Python 2 to Python 3
 More details in [rtmplite](https://github.com/KnugiHK/rtmplite3/wiki/rtmplite)
 
 > This project was migrated from <https://code.google.com/p/rtmplite> on May 17, 2015  
@@ -44,7 +45,16 @@ Tested environment:
 * Windows 10 1803 with Python 3.8.3rc1
 * Ubuntu 18.04.4 LTS with Python 3.6.9.
 
-Typically an application can launch this server as follows:
+First, clone all source files from this repo or install rtmplite3 from pip:
+```shell
+# Download from this repo
+git clone https://github.com/KnugiHK/rtmplite3.git
+
+# Install from pip
+pip install rtmplite3
+```
+
+Typically, an application can launch this server as follows if you clone this repo instead of install from pip:
 ```
 $ python rtmp.py -d
 ```
