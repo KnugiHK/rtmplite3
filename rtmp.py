@@ -2025,10 +2025,6 @@ class FlashServer(object):
     def deletehandler(self, client, cmd):
         raise NotImplementedError()
 
-@Event.onConnect
-def onConnect_handler(client, *args):
-    print(f"App '{client.path}' is connected!")
-
 # The main routine to start, run and stop the service
 if __name__ == '__main__':
     from optparse import OptionParser
