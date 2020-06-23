@@ -1434,6 +1434,83 @@ class Event():
 
         Event.handlers[event] = handler
 
+    @staticmethod
+    def onConnect(handler):
+        def handle():
+            Event.add_handler("onConnect", handler)
+        return handle()
+
+    @staticmethod
+    def onDisconnect(handler):
+        def handle():
+            Event.add_handler("onDisconnect", handler)
+        return handle()
+
+    @staticmethod
+    def onPublish(handler):
+        def handle():
+            Event.add_handler("onPublish", handler)
+        return handle()
+
+    @staticmethod
+    def onClose(handler):
+        def handle():
+            Event.add_handler("onClose", handler)
+        return handle()
+
+    @staticmethod
+    def onPlay(handler):
+        def handle():
+            Event.add_handler("onPlay", handler)
+        return handle()
+
+    @staticmethod
+    def onStop(handler):
+        def handle():
+            Event.add_handler("onStop", handler)
+        return handle()
+
+    @staticmethod
+    def onCommand(handler):
+        def handle():
+            Event.add_handler("onCommand", handler)
+        return handle()
+
+    @staticmethod
+    def onStatus(handler):
+        def handle():
+            Event.add_handler("onStatus", handler)
+        return handle()
+
+    @staticmethod
+    def onResult(handler):
+        def handle():
+            Event.add_handler("onResult", handler)
+        return handle()
+
+    @staticmethod
+    def onPublishData(handler):
+        def handle():
+            Event.add_handler("onPublishData", handler)
+        return handle()
+
+    @staticmethod
+    def onPlayData(handler):
+        def handle():
+            Event.add_handler("onPlayData", handler)
+        return handle()
+
+    @staticmethod
+    def onUnpublish(handler):
+        def handle():
+            Event.add_handler("onUnpublish", handler)
+        return handle()
+
+    @staticmethod
+    def onDelete(handler):
+        def handle():
+            Event.add_handler("onDelete", handler)
+        return handle()
 
 class Wirecast(App):
     '''A wrapper around App to workaround with wirecast publisher which does not send AVC seq periodically. It defines new stream variables
@@ -1948,7 +2025,7 @@ class FlashServer(object):
     def deletehandler(self, client, cmd):
         raise NotImplementedError()
 
-@Event.add("onConnect")
+@Event.onConnect
 def onConnect_handler(client, *args):
     print(f"App '{client.path}' is connected!")
 
