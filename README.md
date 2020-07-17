@@ -1,3 +1,6 @@
+# RTMPLite3 #
+[![Latest version released on PyPi](https://img.shields.io/pypi/v/rtmplite3.svg?style=flat&label=latest%20version)](https://pypi.org/project/rtmplite3/)
+
 # What is rtmplite3? #
 This is a fork of rtmplite with conversion of Python 2 to Python 3
 More details in [rtmplite](https://github.com/KnugiHK/rtmplite3/wiki/rtmplite)
