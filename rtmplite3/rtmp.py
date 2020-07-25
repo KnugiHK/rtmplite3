@@ -1,66 +1,6 @@
 # Copyright (c) 2007-2009, Mamta Singh. All rights reserved. see README for details.
 # Copyright (c) 2010-2011, Kundan Singh.
 
-'''
-This is a simple implementation of a Flash RTMP server to accept connections and stream requests. The module is organized as follows:
-1. The FlashServer class is the main class to provide the server abstraction. It uses the multitask module for co-operative multitasking.
-   It also uses the App abstract class to implement the applications.
-2. The Server class implements a simple server to receive new Client connections and inform the FlashServer application. The Client class
-   derived from Protocol implements the RTMP client functions. The Protocol class implements the base RTMP protocol parsing. A Client contains
-   various streams from the client, represented using the Stream class.
-3. The Message, Header and Command represent RTMP message, header and command respectively. The FLV class implements functions to perform read
-   and write of FLV file format.
-
-
-Typically an application can launch this server as follows:
-$ python rtmp.py
-
-To know the command line options use the -h option:
-$ python rtmp.py -h
-
-To start the server with a different directory for recording and playing FLV files from, use the following command.
-$ python rtmp.py -r some-other-directory/
-Note the terminal '/' in the directory name. Without this, it is just used as a prefix in FLV file names.
-
-A test client is available in testClient directory, and can be compiled using Flex Builder. Alternatively, you can use the SWF file to launch
-from testClient/bin-debug after starting the server. Once you have launched the client in the browser, you can connect to
-local host by clicking on 'connect' button. Then click on publish button to publish a stream. Open another browser with
-same URL and first connect then play the same stream name. If everything works fine you should be able to see the video
-from first browser to the second browser. Similar, in the first browser, if you check the record box before publishing,
-it will create a new FLV file for the recorded stream. You can close the publishing stream and play the recorded stream to
-see your recording. Note that due to initial delay in timestamp (in case publish was clicked much later than connect),
-your played video will start appearing after some initial delay.
-
-
-If an application wants to use this module as a library, it can launch the server as follows:
->>> agent = FlashServer()   # a new RTMP server instance
->>> agent.root = 'flvs/'    # set the document root to be 'flvs' directory. Default is current './' directory.
->>> agent.start()           # start the server
->>> multitask.run()         # this is needed somewhere in the application to actually start the co-operative multitasking.
-
-
-If an application wants to specify a different application other than the default App, it can subclass it and supply the application by
-setting the server's apps property. The following example shows how to define "myapp" which invokes a 'connected()' method on client when
-the client connects to the server.
-
-class MyApp(App):         # a new MyApp extends the default App in rtmp module.
-    def __init__(self):   # constructor just invokes base class constructor
-        App.__init__(self)
-    def onConnect(self, client, *args):
-        result = App.onConnect(self, client, *args)   # invoke base class method first
-        def invokeAdded(self, client):                # define a method to invoke 'connected("some-arg")' on Flash client
-            yield client.call('connected', 'some-arg')
-        multitask.add(invokeAdded(self, client))      # need to invoke later so that connection is established before callback
-        return result     # return True to accept, or None to postpone calling accept()
-...
-agent.apps = dict({'myapp': MyApp, 'someapp': MyApp, '*': App})
-
-Now the client can connect to rtmp://server/myapp or rtmp://server/someapp and will get connected to this MyApp application.
-If the client doesn't define "function connected(arg:String):void" in the NetConnection.client object then the server will
-throw an exception and display the error message.
-
-'''
-
 import os
 import sys
 import time
@@ -83,7 +23,7 @@ import hmac
 import random
 
 _debug = _verbose = _recording = False
-_version, _build = "v0.2.5", "20200621"
+_version, _build = "v0.2.6", "20200725"
 
 
 class ConnectionClosed(Exception):
@@ -136,79 +76,6 @@ class SockStream(object):
             except BaseException:
                 raise ConnectionClosed
 
-
-'''
-NOTE: Here is a part of the documentation to understand how the Chunks' headers work.
-      To have a complete documentation, YOU HAVE TO READ rtmp_specification_1.0.pdf (from page 13)
-
-This is the format of a chunk. Here, we store all except the chunk data:
-------------------------------------------------------------------------
-
-+-------------+----------------+-------------------+--------------+
-| Basic header|Chunk Msg Header|Extended Time Stamp|   Chunk Data |
-+-------------+----------------+-------------------+--------------+
-
-This are the formats of the basic header:
------------------------------------------
-
- 0 1 2 3 4 5 6 7      0 1 2 3 4 5 6 7 8 9 0 1 2 3 4 5      0 1 2 3 4 5 6 7 8 9 0 1 2 3 4 5 6 7 8 9 0 1 2 3
-+-+-+-+-+-+-+-+-+    +-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+    +-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+
-|fmt|   cs id   |    |fmt|     0     |   cs id - 64  |    |fmt|     1     |        cs id - 64             |
-+-+-+-+-+-+-+-+-+    +-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+    +-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+
-
-  (cs id < 64)            (64 <= cs id < 320)                           (320 <= cs id)
-
-fmt store the format of the chunk message header. There are four different formats.
-
-
-Type 0 (fmt=00):
-----------------
-
-This type MUST be used at the start of a chunk stream, and whenever the stream timestamp goes backward (e.g., because of a backward seek).
-
- 0 1 2 3 4 5 6 7 8 9 0 1 2 3 4 5 6 7 8 9 0 1 2 3 4 5 6 7 8 9 0 1 2 3 4 5 6 7 8 9 0 1 2 3 4 5 6 7 8 9 0 1 2 3 4 5 6 7 8 9 0 1 2 3 4 5 6 7 8 9 0 1 2 3 4 5 6 7 8 9
-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+
-|                      timestamp                |                message length                 |message type id|                message stream id              |
-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+
-
-
-Type 1 (fmt=01):
-----------------
-
-Streams with variable-sized messages (for example, many video formats) SHOULD use this format for the first chunk of each new message after the first.
-
- 0 1 2 3 4 5 6 7 8 9 0 1 2 3 4 5 6 7 8 9 0 1 2 3 4 5 6 7 8 9 0 1 2 3 4 5 6 7 8 9 0 1 2 3 4 5 6 7 8 9 0 1 2 3 4 5
-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+
-|                timestamp delta                |                message length                 |message type id|
-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+
-
-
-Type 2 (fmt=10):
-----------------
-
-Streams with constant-sized messages (for example, some audio and data formats) SHOULD use this format for the first chunk of each message after the first.
-
- 0 1 2 3 4 5 6 7 8 9 0 1 2 3 4 5 6 7 8 9 0 1 2 3
-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+
-|                timestamp delta                |
-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+
-
-
-Type 3 (fmt=11):
-----------------
-
-Chunks of Type 3 have no header. Stream ID, message length and timestamp delta are not present; chunks of this type take values from
-the preceding chunk. When a single message is split into chunks, all chunks of a message except the first one, SHOULD use this type.
-
-Extended Timestamp:
--------------------
-
-This field is transmitted only when the normal time stamp in the chunk message header is set to 0x00ffffff. If normal time stamp is
-set to any value less than 0x00ffffff, this field MUST NOT be present. This field MUST NOT be present if the timestamp field is not
-present. Type 3 chunks MUST NOT have this field. This field if transmitted is located immediately after the chunk message header
-and before the chunk data.
-
-'''
 
 class Protocol(object):
     PING_SIZE, DEFAULT_CHUNK_SIZE, HIGH_WRITE_CHUNK_SIZE, PROTOCOL_CHANNEL_ID = 1536, 128, 4096, 2  # constants
