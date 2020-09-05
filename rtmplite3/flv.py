@@ -1,4 +1,6 @@
 import struct
+import os
+import sys
 try:
     from rtmplite3 import multitask, amf # try import from package
     from rtmplite3.common import *

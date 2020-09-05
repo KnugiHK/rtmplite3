@@ -23,7 +23,7 @@ import hmac
 import random
 
 _debug = _verbose = _recording = False
-_version, _build = "v0.2.6", "20200725"
+_version, _build = "v0.2.9", "20200905"
 
 
 class ConnectionClosed(Exception):
@@ -458,94 +458,6 @@ class Protocol(object):
                 yield self.connectionClosed()
             except BaseException:
                 print(traceback.print_exc())
-
-
-class Command(object):
-    ''' Class for command / data messages'''
-
-    def __init__(
-            self,
-            type=Message.RPC,
-            name=None,
-            id=None,
-            tm=0,
-            cmdData=None,
-            args=[]):
-        '''Create a new command with given type, name, id, cmdData and args list.'''
-        self.type, self.name, self.id, self.time, self.cmdData, self.args = type, name, id, tm, cmdData, args[:]
-
-    def __repr__(self):
-        return (f"<Command type={self.type} name={self.name} id={self.id} data={self.cmdData} args={self.args}>")
-
-    def setArg(self, arg):
-        self.args.append(arg)
-
-    def getArg(self, index):
-        return self.args[index]
-
-    @classmethod
-    def fromMessage(cls, message):
-        ''' initialize from a parsed RTMP message'''
-        assert (
-            message.type in [
-                Message.RPC,
-                Message.RPC3,
-                Message.DATA,
-                Message.DATA3])
-
-        length = len(message.data)
-        if length == 0:
-            raise ValueError('zero length message data')
-
-        if message.type == Message.RPC3 or message.type == Message.DATA3:
-            assert message.data[0] == b'\x00'  # must be 0 in AMF3
-            data = message.data[1:]
-        else:
-            data = message.data
-
-        #from pyamf import remoting
-        amfReader = amf.AMF0(data)
-        inst = cls()
-        inst.type = message.type
-        inst.time = message.time
-        inst.name = amfReader.read()  # first field is command name
-
-        try:
-            if message.type == Message.RPC or message.type == Message.RPC3:
-                inst.id = amfReader.read()  # second field *may* be message id
-                inst.cmdData = amfReader.read()  # third is command data
-            else:
-                inst.id = 0
-            inst.args = []  # others are optional
-            while True:
-                inst.args.append(amfReader.read())  # amfReader.read())
-        except EOFError:
-            pass
-        return inst
-
-    def toMessage(self):
-        msg = Message()
-        assert self.type
-        msg.type = self.type
-        msg.time = self.time
-        output = amf.AMFBytesIO()
-        amfWriter = amf.AMF0(output)
-        amfWriter.write(self.name)
-        if msg.type == Message.RPC or msg.type == Message.RPC3:
-            amfWriter.write(self.id)
-            amfWriter.write(self.cmdData)
-        for arg in self.args:
-            amfWriter.write(arg)
-        output.seek(0)
-        # hexdump.hexdump(output)
-        # output.seek(0)
-        if msg.type == Message.RPC3 or msg.type == Message.DATA3:
-            data = b'\x00' + output.read()
-        else:
-            data = output.read()
-        msg.data = data
-        output.close()
-        return msg
 
 
 class Stream(object):
