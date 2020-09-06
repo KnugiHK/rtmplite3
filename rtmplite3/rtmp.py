@@ -83,6 +83,7 @@ class Protocol(object):
 
     def __init__(self, sock):
         self.stream = SockStream(sock)
+        self.lport = sock.getsockname()[1]
         self.lastReadHeaders, self.incompletePackets, self.lastWriteHeaders = dict(), dict(), dict()
         self.readChunkSize = self.writeChunkSize = Protocol.DEFAULT_CHUNK_SIZE
         self.readWinSize0, self.readWinSize, self.writeWinSize0, self.writeWinSize = 0, self.READ_WIN_SIZE, 0, self.WRITE_WIN_SIZE
@@ -151,8 +152,8 @@ class Protocol(object):
                 print(data)
             data = b'''<!DOCTYPE cross-domain-policy SYSTEM "http://www.macromedia.com/xml/dtds/cross-domain-policy.dtd">
                     <cross-domain-policy>
-                      <allow-access-from domain="*" to-ports="1935" secure='false'/>
-                    </cross-domain-policy>'''
+                      <allow-access-from domain="*" to-ports="%s" secure='false'/>
+                    </cross-domain-policy>''' % self.lport
             yield self.stream.write(data)
             raise ConnectionClosed
         else:
