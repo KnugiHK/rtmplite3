@@ -23,7 +23,7 @@ import hmac
 import random
 
 _debug = _verbose = _recording = False
-_version, _build = "v0.2.9", "20200905"
+_version, _build = "v0.3.0", "20200906"
 
 
 class ConnectionClosed(Exception):
@@ -136,7 +136,6 @@ class Protocol(object):
         except BaseException:
             if _debug:
                 print('exception, closing connection')
-            if _debug:
                 traceback.print_exc()
             yield self.connectionClosed()
 
