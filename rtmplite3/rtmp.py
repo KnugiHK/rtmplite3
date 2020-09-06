@@ -10,12 +10,12 @@ import traceback
 try:
     from rtmplite3 import multitask, amf # try import from package
     from rtmplite3.flv import FLV
-    from rtmplite3.common import *
+    from rtmplite3.common import truncate, Header, Message, Command
 except:
     try:
         import multitask, amf
         from flv import FLV
-        from common import *
+        from common import truncate, Header, Message, Command
     except:
         exit("Required module not found")
 import hashlib
@@ -484,7 +484,7 @@ class Stream(object):
             self.playfile.close()
             self.playfile = None
         self.client = None  # to clear the reference
-        pass
+
 
     def __repr__(self):
         return self._name

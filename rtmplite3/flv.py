@@ -3,11 +3,11 @@ import os
 import sys
 try:
     from rtmplite3 import multitask, amf # try import from package
-    from rtmplite3.common import *
+    from rtmplite3.common import Header, Message, Command
 except:
     try:
         import multitask, amf
-        from common import *
+        from common import Header, Message, Command
     except:
         exit("Required module not found.")
 
