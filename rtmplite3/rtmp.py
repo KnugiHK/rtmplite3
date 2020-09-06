@@ -129,9 +129,9 @@ class Protocol(object):
             yield self.parseHandshake()  # parse rtmp handshake
             yield self.parseMessages()   # parse messages
         except ConnectionClosed:
-            yield self.connectionClosed()
             if _debug:
                 print('parse connection closed')
+            yield self.connectionClosed()
         except BaseException:
             if _debug:
                 print('exception, closing connection')
