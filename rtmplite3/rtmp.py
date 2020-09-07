@@ -23,7 +23,7 @@ import hmac
 import random
 
 _debug = _verbose = _recording = False
-_version, _build = "v0.3.0", "20200906"
+_version, _build = "v0.3.0", "20200907"
 
 
 class ConnectionClosed(Exception):
@@ -54,8 +54,8 @@ class SockStream(object):
                     raise ConnectionClosed
                 if _verbose:
                     print(f'socket.read[{len(data)}] {truncate(data)}')
-                self.bytesRead += len(data)
-                self.buffer += data
+                self.bytesRead = self.bytesRead + len(data)
+                self.buffer = self.buffer + data
         except Exception as e:
             if _debug:
                 print(e)
@@ -68,7 +68,7 @@ class SockStream(object):
     def write(self, data):
         while len(data) > 0:  # write in 4K chunks each time
             chunk, data = data[:4096], data[4096:]
-            self.bytesWritten += len(chunk)
+            self.bytesWritten = self.bytesWritten + len(chunk)
             if _verbose:
                 print(f'socket.write[{len(chunk)}] {truncate(chunk)}' )
             try:
@@ -300,7 +300,7 @@ class Protocol(object):
             count = min(header.size - (len(data)),
                         self.readChunkSize)  # how much more
 
-            data += (yield self.stream.read(count))
+            data = data + (yield self.stream.read(count))
 
             # check if we need to send Ack
             if self.readWinSize is not None:
@@ -447,9 +447,9 @@ class Protocol(object):
 
             data = b''
             while len(message.data) > 0:
-                data += hdr.toBytes(control)  # gather header bytes
+                data = data + hdr.toBytes(control)  # gather header bytes
                 count = min(self.writeChunkSize, len(message.data))
-                data += message.data[:count]
+                data = data + message.data[:count]
                 message.data = message.data[count:]
                 control = Header.SEPARATOR  # incomplete message continuation
             try:
@@ -470,7 +470,7 @@ class Stream(object):
         self.recordfile = self.playfile = None
         self.queue = multitask.Queue()
         self._name = 'Stream[' + str(Stream.count) + ']'
-        Stream.count += 1
+        Stream.count = Stream.count + 1
         if _debug:
             print(self, 'created')
 
@@ -551,7 +551,7 @@ class Client(Protocol):
                 stream = Stream(self)  # create a stream object
                 stream.id = self._nextStreamId
                 self.streams[self._nextStreamId] = stream
-                self._nextStreamId += 1
+                self._nextStreamId = self._nextStreamId + 1
 
                 # also notify others of our new stream
                 yield self.queue.put(('stream', stream))
@@ -626,7 +626,7 @@ class Client(Protocol):
         cmd = Command()
         cmd.id, cmd.time, cmd.name, cmd.type = self._nextCallId, self.relativeTime, method, self.rpc
         cmd.args, cmd.cmdData = args, None
-        self._nextCallId += 1
+        self._nextCallId = self._nextCallId + 1
         if _debug:
             print(
                 'Client.call method=',
@@ -642,7 +642,7 @@ class Client(Protocol):
         stream = Stream(self)
         stream.id = self._nextStreamId
         self.streams[stream.id] = stream
-        self._nextStreamId += 1
+        self._nextStreamId = self._nextStreamId + 1
         return stream
 
 
@@ -703,7 +703,7 @@ class App(object):
 
     def __init__(self):
         self.name = str(self.__class__.__name__) + '[' + str(App.count) + ']'
-        App.count += 1
+        App.count = App.count + 1
         # Streams indexed by stream name, and list of clients
         self.players, self.publishers, self._clients = {}, {}, []
         if _debug:
@@ -812,11 +812,6 @@ class App(object):
         return True  # should return True so that data will be actually played in that stream
 
     def getfile(self, path, name, root, mode):
-        if root[-1] != "\\" or root[-1] != "/":
-            if "nt" in os.name:
-                root += "\\"
-            else:
-                root += "/"
         if mode == 'play':
             path = getfilename(path, name, root)
             if not os.path.exists(path):
@@ -830,6 +825,11 @@ class App(object):
 def getfilename(path, name, root):
     '''return the file name for the given stream. The name is derived as root/scope/name.flv where scope is
     the the path present in the path variable.'''
+    if "nt" in os.name:
+        if root[-1] != "\\":
+            root = root + "\\"
+    elif root[-1] != "/":
+        root = root + "/"
     _, _, scope = path.partition('/')
     if scope:
         scope = scope + '/'
