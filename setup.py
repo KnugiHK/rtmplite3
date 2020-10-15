@@ -4,7 +4,7 @@ with open("README.md", "r") as fh:
     long_description = fh.read()
 
 setuptools.setup(
-    name="rtmplite3", # Replace with your own username
+    name="rtmplite3",
     version="0.3.0",
     author="KnugiHK",
     author_email="info@knugi.xyz",
