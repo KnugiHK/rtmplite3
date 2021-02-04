@@ -1,7 +1,9 @@
 # RTMPLite3 #
-[![Latest version released on PyPi](https://img.shields.io/pypi/v/rtmplite3.svg?style=flat&label=latest%20version)](https://pypi.org/project/rtmplite3/) ![Python package](https://github.com/KnugiHK/rtmplite3/workflows/Python%20package/badge.svg)
+[![Latest version released on PyPi](https://img.shields.io/pypi/v/rtmplite3.svg?style=flat&label=latest%20version)](https://pypi.org/project/rtmplite3/) ![Master Testing](https://github.com/KnugiHK/rtmplite3/workflows/Master%20testing/badge.svg)
 
 This repo is part of [self-host video streaming project](https://github.com/users/KnugiHK/projects/3).
+
+No major new function designated for RTMP server will be introduced, since the original author has updated the RTMPlite project. However, bugs and features required by the self-host video streaming project will still be fixed and developed. [Link to the repo created by original author.](https://github.com/theintencity/rtclite/tree/python3)
 
 # What is rtmplite3? #
 This is a fork of rtmplite with conversion of Python 2 to Python 3
@@ -94,6 +96,7 @@ or double click the file
 # Known issues
 1. The program cannot exit with Control+C in Windows
 2. Viewer cannot join the stream after the feed started to broadcast
+3. recording and verbose mode will not enable when run with direct command and run as Python module
 
 # Contribution #
 If you want to help me to improve the quality of this project, you can submit an issue.
