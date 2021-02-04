@@ -88,11 +88,30 @@ class Message(object):
         self.header, self.data = hdr or Header(), data
 
     # define properties type, streamId and time to access
-    # self.header.(property)
-    for p in ['type', 'streamId', 'time']:
-        exec(f'def _g{p}(self): return self.header.{p}')
-        exec(f'def _s{p}(self, {p}): self.header.{p} = {p}')
-        exec(f'{p} = property(fget=_g{p}, fset=_s{p})')
+    # self.header.(property)  
+    def _gtype(self):
+        return self.header.type
+        
+    def _stype(self, type):
+        return self.header.type = type
+    
+    type = property(fget=_gtype, fset=_stype)
+    
+    def _gstreamId(self):
+        return self.header.streamId
+        
+    def _sstreamId(self, streamId):
+        return self.header.streamId = streamId
+    
+    streamId = property(fget=_gstreamId, fset=_sstreamId)
+    
+    def _gtime(self):
+        return self.header.time
+        
+    def _stime(self, time):
+        return self.header.time = time
+    
+    time = property(fget=_gtime, fset=_stime) 
 
     @property
     def size(self): return len(self.data)

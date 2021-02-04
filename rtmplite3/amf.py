@@ -61,17 +61,53 @@ class AMFBytesIO(
             self.seek(self.tell() - 1)
             return c
 
-    for type, T, bytes in (('u8', 'B', 1), ('s8', 'b', 1), ('u16', 'H', 2),
-                           ('s16', 'h', 2), ('u32', 'L', 4), ('s32', 'l', 4), ('double', 'd', 8)):
-        exec(
-            '''def read_%s(self): return struct.unpack("!%s", self.read(%d))[0]''' %
-            (type, T, bytes))
-        exec(
-            '''def write_%s(self, c): self.write(struct.pack("!%s", c))''' %
-            (type, T))
-
-    def read_utf8(self, length): return str(self.read(length), 'utf8')
-    def write_utf8(self, c): self.write(c.encode('utf8'))
+    def read_u8(self):
+        return struct.unpack("!B", self.read(1))[0]
+    
+    def write_u8(self, c):
+        self.write(struct.pack("!B", c))
+        
+    def read_s8(self):
+        return struct.unpack("!b", self.read(1))[0]
+    
+    def write_s8(self, c):
+        self.write(struct.pack("!b", c))
+        
+    def read_u16(self):
+        return struct.unpack("!H", self.read(2))[0]
+    
+    def write_u16(self, c):
+        self.write(struct.pack("!H", c))
+    
+    def read_s16(self):
+        return struct.unpack("!h", self.read(2))[0]
+    
+    def write_s16(self, c):
+        self.write(struct.pack("!h", c))
+        
+    def read_u32(self):
+        return struct.unpack("!L", self.read(4))[0]
+    
+    def write_u32(self, c):
+        self.write(struct.pack("!L", c))
+    
+    def read_s32(self):
+        return struct.unpack("!l", self.read(4))[0]
+    
+    def write_s32(self, c):
+        self.write(struct.pack("!l", c))
+    
+    def read_double(self):
+        return struct.unpack("!d", self.read(8))[0]
+        
+    def write_double(self, c):
+        self.write(struct.pack("!d", c))
+    
+    def read_utf8(self, length):
+        return str(self.read(length), 'utf8')
+        
+    def write_utf8(self, c):
+        self.write(c.encode('utf8'))
 
     def read_u29(self):
         n = result = 0
