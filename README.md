@@ -3,7 +3,7 @@
 
 This repo is part of [self-host video streaming project](https://github.com/users/KnugiHK/projects/3).
 
-No major new function designated for RTMP server will be introduced, since the original author has updated the RTMPlite project. However, bugs and feature required by the self-host video streaming project will still be fixed and developed.
+No major new function designated for RTMP server will be introduced, since the original author has updated the RTMPlite project. However, bugs and features required by the self-host video streaming project will still be fixed and developed. [Link to the repo created by original author.](https://github.com/theintencity/rtclite/tree/python3)
 
 # What is rtmplite3? #
 This is a fork of rtmplite with conversion of Python 2 to Python 3
