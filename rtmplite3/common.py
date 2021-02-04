@@ -93,7 +93,7 @@ class Message(object):
         return self.header.type
         
     def _stype(self, type):
-        return self.header.type = type
+        self.header.type = type
     
     type = property(fget=_gtype, fset=_stype)
     
@@ -101,7 +101,7 @@ class Message(object):
         return self.header.streamId
         
     def _sstreamId(self, streamId):
-        return self.header.streamId = streamId
+        self.header.streamId = streamId
     
     streamId = property(fget=_gstreamId, fset=_sstreamId)
     
@@ -109,7 +109,7 @@ class Message(object):
         return self.header.time
         
     def _stime(self, time):
-        return self.header.time = time
+        self.header.time = time
     
     time = property(fget=_gtime, fset=_stime) 
 
