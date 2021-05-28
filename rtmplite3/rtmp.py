@@ -23,7 +23,7 @@ import hmac
 import random
 
 _debug = _verbose = _recording = False
-_version, _build = "v0.3.0", "20200907"
+_version, _build = "v0.3.5", "20210528"
 
 
 class ConnectionClosed(Exception):
