@@ -8,7 +8,7 @@ setuptools.setup(
     version="0.3.5",
     author="KnugiHK",
     author_email="info@knugi.com",
-    description="Maybe this is the first RTMP server in Python 3",
+    description="A pure Python 3 RTMP server.",
     long_description=long_description,
     long_description_content_type="text/markdown",
     url="https://github.com/KnugiHK/rtmplite3",
