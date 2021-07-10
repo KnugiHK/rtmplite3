@@ -8,12 +8,13 @@ import struct
 import socket
 import traceback
 try:
-    from rtmplite3 import multitask, amf # try import from package
+    from rtmplite3 import multitask, amf  # try import from package
     from rtmplite3.flv import FLV
     from rtmplite3.common import truncate, Header, Message, Command
 except:
     try:
-        import multitask, amf
+        import multitask
+        import amf
         from flv import FLV
         from common import truncate, Header, Message, Command
     except:
@@ -70,7 +71,7 @@ class SockStream(object):
             chunk, data = data[:4096], data[4096:]
             self.bytesWritten = self.bytesWritten + len(chunk)
             if _verbose:
-                print(f'socket.write[{len(chunk)}] {truncate(chunk)}' )
+                print(f'socket.write[{len(chunk)}] {truncate(chunk)}')
             try:
                 yield multitask.send(self.sock, chunk)
             except BaseException:
@@ -182,8 +183,8 @@ class Protocol(object):
             scheme = None
             for s in range(0, 2):
                 digest_offset = (sum([data[i] for i in range(772, 776)]) %
-                                    728 + 776) if s == 1 else (sum([data[i] \
-                                    for i in range(8, 12)]) % 728 + 12)
+                                 728 + 776) if s == 1 else (sum([data[i]
+                                                                 for i in range(8, 12)]) % 728 + 12)
                 temp = data[0:digest_offset] + \
                     data[digest_offset + 32:Protocol.PING_SIZE]
                 hash = Protocol._calculateHash(
@@ -205,7 +206,8 @@ class Protocol(object):
                 keys[0][0:128] + handshake[server_dh_offset + 128:]
             if chunk_type > 0x03:
                 raise ValueError('RTMP encryption is not supported')
-            server_digest_offset = Protocol._calculate_offset_2(handshake, scheme)
+            server_digest_offset = Protocol._calculate_offset_2(
+                handshake, scheme)
             temp = handshake[0:server_digest_offset] + \
                 handshake[server_digest_offset + 32:Protocol.PING_SIZE]
             hash = Protocol._calculateHash(temp, Protocol.SERVER_KEY[:36])
@@ -225,18 +227,18 @@ class Protocol(object):
     @staticmethod
     def _calculateHash(msg, key):  # Hmac-sha256
         return hmac.new(key, msg, hashlib.sha256).digest()
-    
+
     @staticmethod
     def _calculate_offset_1(data, scheme):
         return (sum([data[i] for i in range(768, 772)]) %
-                    632 + 8) if scheme == 1 else (sum([data[i] \
-                    for i in range(1532, 1536)]) % 632 + 772)
+                632 + 8) if scheme == 1 else (sum([data[i]
+                                                   for i in range(1532, 1536)]) % 632 + 772)
 
     @staticmethod
     def _calculate_offset_2(data, scheme):
         return (sum([data[i] for i in range(772, 776)]) %
-                    728 + 776) if scheme == 1 else (sum([data[i] \
-                    for i in range(8, 12)]) % 728 + 12)
+                728 + 776) if scheme == 1 else (sum([data[i]
+                                                     for i in range(8, 12)]) % 728 + 12)
 
     @staticmethod
     def _generateKeyPair():  # dummy key pair since we don't support encryption
@@ -326,7 +328,8 @@ class Protocol(object):
                     if channel in self.incompletePackets:
                         del self.incompletePackets[channel]
                         if _verbose:
-                            print(f'aggregated {len(data)} bytes message: readChunkSize({self.readChunkSize}) x {len(data) / self.readChunkSize}')
+                            print(
+                                f'aggregated {len(data)} bytes message: readChunkSize({self.readChunkSize}) x {len(data) / self.readChunkSize}')
                 else:
                     data, self.incompletePackets[channel] = data[:header.size], data[header.size:]
 
@@ -374,7 +377,8 @@ class Protocol(object):
 
                         backpointer = struct.unpack('!I', aggdata[0:4])[0]
                         if backpointer != subsize:
-                            print(f'Warning aggregate submsg backpointer={backpointer} != {subsize}')
+                            print(
+                                f'Warning aggregate submsg backpointer={backpointer} != {subsize}')
                         # skip back pointer, go to next message
                         aggdata = aggdata[4:]
                 else:
@@ -485,7 +489,6 @@ class Stream(object):
             self.playfile = None
         self.client = None  # to clear the reference
 
-
     def __repr__(self):
         return self._name
 
@@ -533,8 +536,8 @@ class Client(Protocol):
             if cmd.name == 'connect':
                 self.agent = cmd.cmdData
                 if _debug:
-                    print('connect',', '.join([f'{x}={getattr(self.agent,x)}' for x in 'app flashVer swfUrl tcUrl fpad capabilities\
-                         audioCodecs videoCodecs videoFunction pageUrl objectEncoding'.split() if hasattr(self.agent,x)]))
+                    print('connect', ', '.join([f'{x}={getattr(self.agent,x)}' for x in 'app flashVer swfUrl tcUrl fpad capabilities\
+                         audioCodecs videoCodecs videoFunction pageUrl objectEncoding'.split() if hasattr(self.agent, x)]))
                 self.objectEncoding = self.agent.objectEncoding if hasattr(
                     self.agent, 'objectEncoding') else 0.0
                 yield self.server.queue.put((self, cmd.args))  # new connection
@@ -672,11 +675,16 @@ class Server(object):
                     break
                 if _debug:
                     print('connection received from', remote)
-                sock.setsockopt(socket.IPPROTO_TCP, socket.TCP_NODELAY, 1)  # make it non-block
-                sock.setsockopt(socket.SOL_SOCKET, socket.SO_KEEPALIVE, 1) # Issue #106
-                sock.setsockopt(socket.IPPROTO_TCP, socket.TCP_KEEPIDLE, 10) # Issue #106
-                sock.setsockopt(socket.IPPROTO_TCP, socket.TCP_KEEPINTVL, 10) # Issue #106
-                sock.setsockopt(socket.IPPROTO_TCP, socket.TCP_KEEPCNT, 2) # Issue #106
+                # make it non-block
+                sock.setsockopt(socket.IPPROTO_TCP, socket.TCP_NODELAY, 1)
+                sock.setsockopt(socket.SOL_SOCKET,
+                                socket.SO_KEEPALIVE, 1)  # Issue #106
+                sock.setsockopt(socket.IPPROTO_TCP,
+                                socket.TCP_KEEPIDLE, 10)  # Issue #106
+                sock.setsockopt(socket.IPPROTO_TCP,
+                                socket.TCP_KEEPINTVL, 10)  # Issue #106
+                sock.setsockopt(socket.IPPROTO_TCP,
+                                socket.TCP_KEEPCNT, 2)  # Issue #106
                 client = Client(sock, self)
         except GeneratorExit:
             pass  # terminate
@@ -785,17 +793,17 @@ class App(object):
 
     def onUnpublish(self, client, cmd):
         if _debug:
-            print(self.name, 'onUnpublish', cmd) 
+            print(self.name, 'onUnpublish', cmd)
 
         if "onUnpublish" in Event.handlers:
-            Event.handlers["onUnpublish"](client, cmd)    
-    
+            Event.handlers["onUnpublish"](client, cmd)
+
     def onDelete(self, client, cmd):
         if _debug:
-            print(self.name, 'onDelete', cmd) 
+            print(self.name, 'onDelete', cmd)
 
         if "onDelete" in Event.handlers:
-            Event.handlers["onDelete"](client, cmd)    
+            Event.handlers["onDelete"](client, cmd)
 
     # this is invoked every time some media packet is received from published
     # stream.
@@ -822,6 +830,7 @@ class App(object):
             return FLV(_debug).open(path, mode)
         return None
 
+
 def getfilename(path, name, root):
     '''return the file name for the given stream. The name is derived as root/scope/name.flv where scope is
     the the path present in the path variable.'''
@@ -838,25 +847,27 @@ def getfilename(path, name, root):
         print('filename=', result)
     return result
 
+
 class Event():
     """Provide a handy function to add event handle"""
-    
+
     from inspect import signature
 
     handlers = {}
     __SUBSCRIBABLES = {"onConnect": len(signature(App.onConnect).parameters) - 1,
-                       "onDisconnect": len(signature(App.onDisconnect).parameters) - 1, 
-                       "onPublish": len(signature(App.onPublish).parameters) - 1, 
-                       "onClose": len(signature(App.onClose).parameters) - 1, 
-                       "onPlay": len(signature(App.onPlay).parameters) - 1, 
-                       "onStop": len(signature(App.onStop).parameters) - 1, 
-                       "onCommand": len(signature(App.onCommand).parameters) - 1, 
-                       "onStatus": len(signature(App.onStatus).parameters) - 1, 
-                       "onResult": len(signature(App.onResult).parameters) - 1, 
-                       "onPublishData": len(signature(App.onPublishData).parameters) - 1, 
+                       "onDisconnect": len(signature(App.onDisconnect).parameters) - 1,
+                       "onPublish": len(signature(App.onPublish).parameters) - 1,
+                       "onClose": len(signature(App.onClose).parameters) - 1,
+                       "onPlay": len(signature(App.onPlay).parameters) - 1,
+                       "onStop": len(signature(App.onStop).parameters) - 1,
+                       "onCommand": len(signature(App.onCommand).parameters) - 1,
+                       "onStatus": len(signature(App.onStatus).parameters) - 1,
+                       "onResult": len(signature(App.onResult).parameters) - 1,
+                       "onPublishData": len(signature(App.onPublishData).parameters) - 1,
                        "onPlayData": len(signature(App.onPlayData).parameters) - 1,
                        "onUnpublish": len(signature(App.onUnpublish).parameters) - 1,
                        "onDelete": len(signature(App.onDelete).parameters) - 1}
+
     @staticmethod
     def add(event):
         """A decorator to call add_handler
@@ -865,7 +876,8 @@ class Event():
             if len(args) > 0:
                 Event.add_handler(event, args[0])
             else:
-                raise ValueError("A function must be defined in this decorator.")
+                raise ValueError(
+                    "A function must be defined in this decorator.")
         return handler
 
     @staticmethod
@@ -886,13 +898,15 @@ class Event():
         if not isinstance(event, str):
             raise TypeError(f"event must be a 'str', not '{type(event)}'.")
         if not callable(handler):
-            raise TypeError(f"handler must be a callable function, not '{type(event)}'.")
+            raise TypeError(
+                f"handler must be a callable function, not '{type(event)}'.")
         if event not in Event.__SUBSCRIBABLES:
             raise ValueError(f"event '{event}' is not subscribable event.")
 
         number_of_args = len(signature(handler).parameters)
         if number_of_args != Event.__SUBSCRIBABLES[event]:
-            raise TypeError(f"{event}() takes exactly {Event.__SUBSCRIBABLES[event]} argument(s) ({number_of_args} given)")
+            raise TypeError(
+                f"{event}() takes exactly {Event.__SUBSCRIBABLES[event]} argument(s) ({number_of_args} given)")
 
         Event.handlers[event] = handler
 
@@ -973,6 +987,7 @@ class Event():
         def handle():
             Event.add_handler("onDelete", handler)
         return handle()
+
 
 class Wirecast(App):
     '''A wrapper around App to workaround with wirecast publisher which does not send AVC seq periodically. It defines new stream variables
@@ -1178,7 +1193,8 @@ class FlashServer(object):
             if client.path in self.clients:
                 inst = self.clients[client.path][0]
                 self.clients[client.path].remove(client)
-            for stream in list(client.streams.values()):  # for all streams of this client
+            # for all streams of this client
+            for stream in list(client.streams.values()):
                 self.closehandler(stream)
             client.streams.clear()  # and clear the collection of streams
             # no more clients left, delete the instance.
@@ -1391,7 +1407,8 @@ class FlashServer(object):
                 '>HI', 0, stream.id)
             yield stream.client.writeMessage(m2)
 
-            response = Command(name='onStatus', id=cmd.id, args=[amf.Object(level='status',code='NetStream.Play.Reset', description=stream.name, details=None)])
+            response = Command(name='onStatus', id=cmd.id, args=[amf.Object(
+                level='status', code='NetStream.Play.Reset', description=stream.name, details=None)])
             yield stream.send(response)
 
             response = Command(
@@ -1406,7 +1423,8 @@ class FlashServer(object):
                         details=None)])
             yield stream.send(response)
 
-            response = Command(name='onStatus', id=cmd.id, tm=stream.client.relativeTime, args=[amf.Object(level='status',code='NetStream.Play.PublishNotify', description=stream.name, details=None)])
+            response = Command(name='onStatus', id=cmd.id, tm=stream.client.relativeTime, args=[amf.Object(
+                level='status', code='NetStream.Play.PublishNotify', description=stream.name, details=None)])
             yield stream.send(response)
 
             if task is not None:
@@ -1481,6 +1499,7 @@ class FlashServer(object):
     def deletehandler(self, client, cmd):
         raise NotImplementedError()
 
+
 # The main routine to start, run and stop the service
 if __name__ == '__main__':
     from optparse import OptionParser
@@ -1529,7 +1548,7 @@ if __name__ == '__main__':
 
     _verbose = options.verbose
     _recording = options.recording
-    
+
     if _verbose:
         _debug = True
     else:
@@ -1538,9 +1557,10 @@ if __name__ == '__main__':
         agent = FlashServer()
         agent.root = options.root
         agent.start(options.host, options.port)
-        print(time.asctime(), f'RTMPLite Server Starts - {options.host}:{options.port} {_version}')
+        print(time.asctime(),
+              f'RTMPLite Server Starts - {options.host}:{options.port} {_version}')
         multitask.run()
     except KeyboardInterrupt:
         agent.stop()
-    
+
     print(time.asctime(), 'RTMPLite Server Stops')

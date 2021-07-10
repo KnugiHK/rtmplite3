@@ -2,6 +2,8 @@ from .rtmp import _version, _build, FlashServer
 from . import multitask
 import time
 from optparse import OptionParser
+
+
 def main():
     parser = OptionParser(version=f'{_version}, {_build}')
     parser.add_option(
@@ -48,7 +50,7 @@ def main():
 
     _verbose = options.verbose
     _recording = options.recording
-        
+
     if _verbose:
         _debug = True
     else:
@@ -57,10 +59,13 @@ def main():
         agent = FlashServer()
         agent.root = options.root
         agent.start(options.host, options.port)
-        print(time.asctime(), f'RTMPLite Server Starts - {options.host}:{options.port} {_version}')
+        print(time.asctime(),
+              f'RTMPLite Server Starts - {options.host}:{options.port} {_version}')
         multitask.run()
     except KeyboardInterrupt:
         agent.stop()
-        
+
         print(time.asctime(), 'RTMPLite Server Stops')
+
+
 main()

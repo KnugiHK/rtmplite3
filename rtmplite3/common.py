@@ -1,11 +1,13 @@
 import struct
 try:
-    from rtmplite3 import amf # try import from package
+    from rtmplite3 import amf  # try import from package
 except:
     try:
         import amf
     except:
         exit("Required module not found")
+
+
 def truncate(data, max=100):
     data1 = data and len(data) > max and data[:max]
     if isinstance(data1, str):
@@ -88,30 +90,30 @@ class Message(object):
         self.header, self.data = hdr or Header(), data
 
     # define properties type, streamId and time to access
-    # self.header.(property)  
+    # self.header.(property)
     def _gtype(self):
         return self.header.type
-        
+
     def _stype(self, type):
         self.header.type = type
-    
+
     type = property(fget=_gtype, fset=_stype)
-    
+
     def _gstreamId(self):
         return self.header.streamId
-        
+
     def _sstreamId(self, streamId):
         self.header.streamId = streamId
-    
+
     streamId = property(fget=_gstreamId, fset=_sstreamId)
-    
+
     def _gtime(self):
         return self.header.time
-        
+
     def _stime(self, time):
         self.header.time = time
-    
-    time = property(fget=_gtime, fset=_stime) 
+
+    time = property(fget=_gtime, fset=_stime)
 
     @property
     def size(self): return len(self.data)
@@ -135,7 +137,8 @@ class Command(object):
             cmdData=None,
             args=[]):
         '''Create a new command with given type, name, id, cmdData and args list.'''
-        self.type, self.name, self.id, self.time, self.cmdData, self.args = type, name, id, tm, cmdData, args[:]
+        self.type, self.name, self.id, self.time, self.cmdData, self.args = type, name, id, tm, cmdData, args[
+            :]
 
     def __repr__(self):
         return (f"<Command type={self.type} name={self.name} id={self.id} data={self.cmdData} args={self.args}>")
