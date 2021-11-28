@@ -2,14 +2,16 @@ import struct
 import os
 import sys
 try:
-    from rtmplite3 import multitask, amf # try import from package
+    from rtmplite3 import multitask, amf  # try import from package
     from rtmplite3.common import Header, Message, Command
 except:
     try:
-        import multitask, amf
+        import multitask
+        import amf
         from common import Header, Message, Command
     except:
         exit("Required module not found.")
+
 
 class FLV(object):
     '''An FLV file which converts between RTMP message and FLV tags.'''
@@ -58,7 +60,7 @@ class FLV(object):
                 '!3sBBI', self.fp.read(9))
             if self._debug:
                 print('FLV.open() hdr=', magic, version, flags, offset)
-            if magic != 'FLV':
+            if magic != b'FLV':
                 raise ValueError('This is not a FLV file')
             if version != 1:
                 raise ValueError('Unsupported FLV file version')
@@ -93,7 +95,8 @@ class FLV(object):
         output = amf.AMFBytesIO()
         amfWriter = amf.AMF0(output)  # TODO: use AMF3 if needed
         amfWriter.write('onMetaData')
-        amfWriter.write({"duration": duration, "videocodecid": 7, "audiocodecid": 10})
+        amfWriter.write(
+            {"duration": duration, "videocodecid": 7, "audiocodecid": 10})
         output.seek(0)
         data = output.read()
         length, ts = len(data), 0
