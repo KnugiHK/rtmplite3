@@ -1,5 +1,5 @@
 # RTMPLite3 #
-[![Latest version released on PyPi](https://img.shields.io/pypi/v/rtmplite3.svg?style=flat&label=latest%20version)](https://pypi.org/project/rtmplite3/) ![Master Testing](https://github.com/KnugiHK/rtmplite3/workflows/Master%20testing/badge.svg)
+[![Latest version released on PyPi](https://img.shields.io/pypi/v/rtmplite3.svg?style=flat&label=latest%20version)](https://pypi.org/project/rtmplite3/)
 
 This repo is part of [self-host video streaming project](https://github.com/users/KnugiHK/projects/3).
 
