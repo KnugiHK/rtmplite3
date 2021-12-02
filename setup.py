@@ -5,7 +5,7 @@ with open("README.md", "r") as fh:
 
 setuptools.setup(
     name="rtmplite3",
-    version="0.3.5",
+    version="0.4.0",
     author="KnugiHK",
     author_email="info@knugi.com",
     description="A pure Python 3 RTMP server.",
