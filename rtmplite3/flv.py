@@ -60,7 +60,7 @@ class FLV(object):
                 '!3sBBI', self.fp.read(9))
             if self._debug:
                 print('FLV.open() hdr=', magic, version, flags, offset)
-            if magic != 'FLV':
+            if magic != b'FLV':
                 raise ValueError('This is not a FLV file')
             if version != 1:
                 raise ValueError('Unsupported FLV file version')
