@@ -188,6 +188,7 @@ class FLV(object):
                         amfReader = amf.AMF0(body)
                     except ValueError as e:
                         print(e)
+                        pass
                     else:
                         if self._debug:
                             print("Try to read as AMF3")
