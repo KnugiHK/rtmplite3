@@ -187,7 +187,15 @@ class FLV(object):
                 # if self._debug: print 'FLV.read() length=', length, 'hdr=', hdr
                 # if hdr.type == Message.AUDIO: print 'r', hdr.type, hdr.time
                 if type == Message.DATA:  # metadata
-                    amfReader = amf.AMF0(body)  # TODO: use AMF3 if needed
+                    try:
+                        amfReader = amf.AMF0(body)
+                    except ValueError as e:
+                        print(e)
+                        pass
+                    else:
+                        if self._debug:
+                            print("Try to read as AMF3")
+                        amfReader = amf.AMF3(body)
                     name = amfReader.read()
                     obj = amfReader.read()
                     if self._debug:
