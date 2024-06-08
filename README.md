@@ -1,8 +1,6 @@
 # RTMPLite3 #
 [![Latest version released on PyPi](https://img.shields.io/pypi/v/rtmplite3.svg?style=flat&label=latest%20version)](https://pypi.org/project/rtmplite3/)
 
-This repo is part of [self-host video streaming project](https://github.com/users/KnugiHK/projects/3).
-
 No major new function designated for RTMP server will be introduced. However, bugs will still be fixed and features required by the self-host video streaming project will still be developed.
 [Link to the repo created by original author.](https://github.com/theintencity/rtclite/tree/python3)
 
